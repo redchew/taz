@@ -67,7 +67,6 @@ begin_test( objectAllocAndCollection, "Object Allocation And Collection" )
         tazE_Bucket  base;
         tazR_TVal    cell;
     } buc;
-    tazR_TVal* ptr = &buc.cell;
     tazE_addBucket( eng, &buc, 1 );
     
     Cell* cell = cons( eng, 0, NULL );
@@ -81,7 +80,9 @@ begin_test( objectAllocAndCollection, "Object Allocation And Collection" )
     tazE_remBucket( eng, &buc );
     tazE_popBarrier( eng, &bar );
     
-    // Touch all cells to make sure they're still alive.
+    // Touch all cells to make sure they're still alive, issues here
+    // may not be caught by the test itself, but will be caught by
+    // valgrind and similar tools.
     for( int i = 9999 ; i >= 0 ; i-- ) {
         check( cell->car == i );
         cell = cell->cdr;;
