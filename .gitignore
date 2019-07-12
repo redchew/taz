@@ -1,0 +1,9 @@
+**/*.o
+**/*.out
+**/*.so
+**/*.a
+**/build/
+**/vgcore.*
+test/test_*
+!test/test_*.c
+
