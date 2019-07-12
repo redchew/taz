@@ -56,12 +56,12 @@ static void  freeMem( tazE_EngineFull* eng, void* old, size_t osz ) {
     reallocMem( eng, old, osz, 0 );
 }
 
-#define tazR_finlIdx( ENG, OBJ )  0
-#define tazR_finlRec( ENG, OBJ )  0
-#define tazR_finlCode( ENG, OBJ ) 0
-#define tazR_finlFun( ENG, OBJ )  0
-#define tazR_finlFib( ENG, OBJ )  0
-#define tazR_finlBox( ENG, OBJ )  0
+#define tazR_finlIdx( ENG, OBJ )
+#define tazR_finlRec( ENG, OBJ )
+#define tazR_finlCode( ENG, OBJ )
+#define tazR_finlFun( ENG, OBJ )
+#define tazR_finlFib( ENG, OBJ )
+#define tazR_finlBox( ENG, OBJ )
 
 static void destructObj( tazE_EngineFull* eng, tazR_Obj* obj ) {
     void* data = tazR_getObjData( obj );
@@ -135,12 +135,12 @@ static void releaseObj( tazE_EngineFull* eng, tazR_Obj* obj ) {
 }
 
 
-#define tazR_scanIdx( ENG, OBJ )  0
-#define tazR_scanRec( ENG, OBJ )  0
-#define tazR_scanCode( ENG, OBJ ) 0
-#define tazR_scanFun( ENG, OBJ )  0
-#define tazR_scanFib( ENG, OBJ )  0
-#define tazR_scanBox( ENG, OBJ )  0
+#define tazR_scanIdx( ENG, OBJ )
+#define tazR_scanRec( ENG, OBJ )
+#define tazR_scanCode( ENG, OBJ )
+#define tazR_scanFun( ENG, OBJ )
+#define tazR_scanFib( ENG, OBJ )
+#define tazR_scanBox( ENG, OBJ )
 
 static void scanObj( tazE_EngineFull* eng, tazR_Obj* obj ) {
     void*  data = tazR_getObjData( obj );
@@ -470,22 +470,24 @@ void tazE_commitRaw( tazE_Engine* eng, tazE_RawAnchor* anchor ) {
     tazR_unlinkWithNextAndLink( anchor );
 }
 
-void tazE_addBucket( tazE_Engine* _eng, tazE_Bucket* bucket, unsigned size ) {
+void tazE_addBucket( tazE_Engine* _eng, void* _buc, unsigned size ) {
     tazE_EngineFull* eng = (tazE_EngineFull*)_eng;
+    tazE_Bucket*     buc = _buc;
     assert( eng->barriers != NULL );
     
-    tazR_linkWithNextAndLink( &eng->barriers->buckets, bucket );
-    bucket->size = size;
+    tazR_linkWithNextAndLink( &eng->barriers->buckets, buc );
+    buc->size = size;
     
-    void* ptr = (void*)bucket + FIRST_BUCKET_OFFSET;
-    for( unsigned i = 0 ; i < bucket->size ; i++, ptr += NEXT_BUCKET_OFFSET ) {
+    void* ptr = (void*)buc + FIRST_BUCKET_OFFSET;
+    for( unsigned i = 0 ; i < buc->size ; i++, ptr += NEXT_BUCKET_OFFSET ) {
         tazR_TVal* val = ptr;
         *val = tazR_udf;
     }
 }
 
-void tazE_remBucket( tazE_Engine* eng, tazE_Bucket* bucket ) {
-    tazR_unlinkWithNextAndLink( bucket );
+void tazE_remBucket( tazE_Engine* eng, void* _buc ) {
+    tazE_Bucket* buc = _buc;
+    tazR_unlinkWithNextAndLink( buc );
 }
 
 void tazE_pushBarrier( tazE_Engine* _eng, tazE_Barrier* barrier ) {

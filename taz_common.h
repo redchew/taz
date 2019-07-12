@@ -49,8 +49,8 @@ typedef int64_t        int64;
 
 
 typedef enum {
-    tazR_Type_FIRST,
     tazR_Type_NONE,
+    tazR_Type_FIRST,
     tazR_Type_FIRST_ATOMIC = tazR_Type_FIRST,
     tazR_Type_UDF = tazR_Type_FIRST_ATOMIC,
     tazR_Type_NIL,
@@ -203,11 +203,11 @@ typedef enum {
     #endif
     
     #define tazR_getValType( VAL )    ( isnan( (VAL).d )? (VAL).u & 0xF : tazR_Type_DEC )
-    #define tazR_getValRaw( VAL )     ( ((VAL).u >> 4) & 0xFFFFFFFFFF )
+    #define tazR_getValRaw( VAL )     ( ((VAL).u >> 4) & 0xFFFFFFFFFFFF )
     #define tazR_getValDec( VAL )     ( (VAL).d )
     
-    #define tazR_udf (tazR_TVal){ .u = tazR_Type_UDF }
-    #define tazR_nil (tazR_TVal){ .u = tazR_Type_NIL }
+    #define tazR_udf (tazR_TVal){ .u = 0x7FFLLU << 52 | tazR_Type_UDF }
+    #define tazR_nil (tazR_TVal){ .u = 0x7FFLLU << 52 | tazR_Type_NIL }
 #endif
 
 #define tazR_getValObj( VAL )   ((void*)tazR_getValRaw( VAL ))

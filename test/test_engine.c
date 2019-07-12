@@ -67,7 +67,8 @@ begin_test( objectAllocAndCollection, "Object Allocation And Collection" )
         tazE_Bucket  base;
         tazR_TVal    cell;
     } buc;
-    tazE_addBucket( eng, (tazE_Bucket*)&buc, 1 );
+    tazR_TVal* ptr = &buc.cell;
+    tazE_addBucket( eng, &buc, 1 );
     
     Cell* cell = cons( eng, 0, NULL );
     buc.cell = tazR_stateVal( cell );
@@ -77,6 +78,7 @@ begin_test( objectAllocAndCollection, "Object Allocation And Collection" )
         buc.cell = tazR_stateVal( cell );
     }
     
+    tazE_remBucket( eng, &buc );
     tazE_popBarrier( eng, &bar );
     
     // Touch all cells to make sure they're still alive.

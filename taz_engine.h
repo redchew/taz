@@ -125,8 +125,8 @@ struct tazE_Bucket {
     unsigned      size;
 };
 
-void tazE_addBucket( tazE_Engine* eng, tazE_Bucket* bucket, unsigned size );
-void tazE_remBucket( tazE_Engine* eng, tazE_Bucket* bucket );
+void tazE_addBucket( tazE_Engine* eng, void* buc, unsigned size );
+void tazE_remBucket( tazE_Engine* eng, void* buc );
 
 
 /* Note: Barriers
