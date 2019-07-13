@@ -9,19 +9,20 @@
 #include <stddef.h>
 #include <assert.h>
 
-
-typedef unsigned char  uchar;
-typedef unsigned short ushort;
-typedef unsigned int   uint;
-typedef unsigned long  ulong;
-typedef uint8_t        uint8;
-typedef uint16_t       uint16;
-typedef uint32_t       uint32;
-typedef uint64_t       uint64;
-typedef int8_t         int8;
-typedef int16_t        int16;
-typedef int32_t        int32;
-typedef int64_t        int64;
+typedef long long          longest;
+typedef unsigned char      uchar;
+typedef unsigned short     ushort;
+typedef unsigned int       uint;
+typedef unsigned long      ulong;
+typedef unsigned long long ulongest;
+typedef uint8_t            uint8;
+typedef uint16_t           uint16;
+typedef uint32_t           uint32;
+typedef uint64_t           uint64;
+typedef int8_t             int8;
+typedef int16_t            int16;
+typedef int32_t            int32;
+typedef int64_t            int64;
 
 #ifndef static_assert
     #define static_assert( COND, MSG )
@@ -244,7 +245,7 @@ typedef enum {
     (NODE)->next = *(LIST);                                                 \
     *(LIST) = (NODE);                                                       \
     if( (NODE)->next )                                                      \
-        *(NODE)->next->link = (NODE);                                        \
+        (NODE)->next->link = &(NODE)->next;                                 \
 } while( 0 )
     
 #define tazR_unlinkWithNextAndLink( NODE ) do {                             \
@@ -253,4 +254,6 @@ typedef enum {
         (NODE)->next->link = (NODE)->link;                                  \
 } while( 0 )
 
+
+#define elemsof( BUF ) (sizeof(BUF)/sizeof(BUF[0]))
 #endif

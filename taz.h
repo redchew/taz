@@ -6,7 +6,7 @@
 typedef struct taz_Instance taz_Instance;
 typedef struct taz_Config   taz_Config;
 typedef struct taz_Var      taz_Var;
-typedef struct taz_StrBuf   taz_StrBuf;
+typedef struct taz_StrLoan  taz_StrLoan;
 typedef enum   taz_ErrNum   taz_ErrNum;
 typedef enum   taz_Scope    taz_Scope;
 
@@ -21,8 +21,9 @@ struct taz_Var {
     unsigned _offset;
 };
 
-struct taz_StrBuf {
-    void* _node;
+struct taz_StrLoan {
+    taz_StrLoan*  next;
+    taz_StrLoan** link;
     
     char const* str;
     size_t      len;
@@ -31,7 +32,8 @@ struct taz_StrBuf {
 enum taz_ErrNum {
     taz_ErrNum_NONE,
     taz_ErrNum_FATAL,
-    taz_ErrNum_PANIC
+    taz_ErrNum_PANIC,
+    taz_ErrNum_OTHER
 };
 
 #endif

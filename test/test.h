@@ -11,16 +11,15 @@ typedef struct {
     bool        (*test)( void );
 } test_Case;
 
-#define begin_test( NAME, DESC )                                               \
+#define begin_test( NAME, SETUP )                                              \
 static bool test_ ## NAME( void );                                             \
 static test_Case info_ ## NAME = {                                             \
-    .desc   = (DESC),                                                          \
     .result = false,                                                           \
     .test   = test_ ## NAME                                                    \
 };                                                                             \
 static bool test_ ## NAME( void ) { SETUP;
 
-#define end_test( NAME )                                                       \
+#define end_test( NAME, TEARDOWN )                                             \
     pass: { TEARDOWN }; return true;                                           \
     fail: { TEARDOWN }; return false;                                          \
 }
@@ -31,23 +30,23 @@ static inline void pad( unsigned has, char with, unsigned column ) {
         putc( with, stdout );
 }
 
-#define begin_suite( NAME, DESC )                                              \
+#define begin_suite( NAME )                                                    \
 static bool suite_ ## NAME( void ) {                                           \
     unsigned passed = 0;                                                       \
     unsigned failed = 0;                                                       \
     unsigned total  = 0;                                                       \
-    printf( "\n%s\n", (DESC) );                                                \
+    printf( "\n%s\n", #NAME );                                                \
     printf( "============================================================\n" );
 
 #define with_test( NAME )                                                      \
     {                                                                          \
         test_Case*  test = &info_ ## NAME;                                     \
-        unsigned has = printf( "Running Test: %s", test->desc );               \
+        unsigned has = printf( "Running Test: %s", #NAME );                    \
         test->result = test->test();                                           \
                                                                                \
         total++;                                                               \
                                                                                \
-        pad( has, ' ', 60 );                                                  \
+        pad( has, ' ', 60 );                                                   \
         if( test->result ) {                                                   \
             printf( "PASSED\n" );                                              \
             passed++;                                                          \

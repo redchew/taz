@@ -1,5 +1,5 @@
 CC      ?= gcc
-CCFLAGS := -Og -g -Wall -std=c99 -fsanitize=address -fsanitize=undefined -fsanitize=leak -Wno-unused $(CFLAGS)
+CCFLAGS := -g -Wall -std=c99 -Wno-unused $(CFLAGS) -fsanitize=address -fsanitize=undefined -fsanitize=leak
 
 run: build
 	@ ./build/test_engine

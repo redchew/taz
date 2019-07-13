@@ -92,6 +92,28 @@ void  tazE_freeRaw( tazE_Engine* eng, void* raw, size_t sz );
 void  tazE_cancelRaw( tazE_Engine* eng, tazE_RawAnchor* anchor );
 void  tazE_commitRaw( tazE_Engine* eng, tazE_RawAnchor* anchor );
 
+/* Note: Garbage Collection
+Cleanup and scanning routines are defined elsewhere for different types of Taz
+values so the engine provides a function to be called elsewhere to mark an
+objects as being references.
+*/
+
+void tazE_markObj( tazE_Engine* eng, void* ptr );
+void tazE_markStr( tazE_Engine* eng, tazR_Str str );
+
+
+#define tazE_markVal( ENG, VAL ) do {                                      \
+    tazR_Type type = tazR_getValType( (VAL) );                             \
+    if( type > tazR_Type_LAST_ATOMIC ) {                                   \
+        if( type == tazR_Type_STR )                                        \
+            tazE_markStr( (ENG), tazR_getValStr( (VAL) ) );                \
+        else                                                               \
+            tazE_markObj( (ENG), tazR_getValObj( (VAL) ) );                \
+    }                                                                      \
+} while( 0 )
+
+void tazE_collect( tazE_Engine* eng, bool full );
+
 
 /* Note: Reference Buckets
 In some subroutines we need to keep references to garbage collected objects
@@ -137,9 +159,10 @@ will be handled (above the respective setjmp() on the stack).  Thus a pair
 of long jump destinations need to be installed before execution of interruption
 prone code.  These jump destinations, as well as the heads linked lists for
 stack allocated entities, are wrapped up in a `tazE_Barrier` struct.  The
-caller is expected to initialize the `jmp_buf` members before adding a barrier
-to the engine, but list pointer will be cleared automatically.  A triggered
-barrier will automatically be removed from the engine.
+caller is expected to initialize the jump destination fields: errorDst and
+yieldDst; as well as the pre-interrupt callbacks: errorFun and yieldFun.
+The callbacks can be set to NULL of nothing needs to be done before the
+interrupt, and destruction of stack frames, is invoked.
 */
 
 struct tazE_Barrier {
@@ -151,6 +174,9 @@ struct tazE_Barrier {
     
     taz_ErrNum  errnum;
     tazR_TVal   errval;
+    
+    void (*errorFun)( tazE_Engine* eng, tazE_Barrier* bar );
+    void (*yieldFun)( tazE_Engine* eng, tazE_Barrier* bar );
     
     jmp_buf errorDst;
     jmp_buf yieldDst;
@@ -171,51 +197,29 @@ topmost barrier, and will release uncommitted allocations.
 void tazE_error( tazE_Engine* eng, taz_ErrNum errnum, tazR_TVal errval );
 void tazE_yield( tazE_Engine* eng );
 
-/* Note: Garbage Collection
-Cleanup and scanning routines are defined elsewhere for different types of Taz
-values so the engine provides a function to be called elsewhere to mark an
-objects as being references.
-*/
-
-void tazE_markObj( tazE_Engine* eng, void* ptr );
-void tazE_markStr( tazE_Engine* eng, tazR_Str str );
-
-
-#define tazE_markVal( ENG, VAL ) do {                                      \
-    tazR_Type type = tazR_getValType( (VAL) );                             \
-    if( type > tazR_Type_LAST_ATOMIC ) {                                   \
-        if( type == tazR_Type_STR )                                        \
-            tazE_markStr( (ENG), tazR_getValStr( (VAL) ) );                \
-        else                                                               \
-            tazE_markObj( (ENG), tazR_getValObj( (VAL) ) );                \
-    }                                                                      \
-} while( 0 )
-
-void tazE_collect( tazE_Engine* eng );
-
 
 /* Note: Strings
 The engine is responsible for string pooling, which it can do at its own
 discretion as the rest of the runtime doesn't depend on any particular
-system.  But this implementation breaks strings into three sizes: short,
-medium, and long.  Short strings are those which are 0-4 bytes long, they
+system.  But this implementation breaks strings into three sizes: small,
+medium, and large.  Small strings are those which are 0-5 bytes long, they
 can be encoded within a value payload itself without any additional memory.
-Medium strings are 5-16 bytes long, and are interned to make for more
-efficient comparison.  Long strings are anything larger than 16 bytes,
+Medium strings are 6-16 bytes long, and are interned to make for more
+efficient comparison.  Large strings are anything larger than 16 bytes,
 these are allocated in independent buffers.
 
 This division of strings into different lengths allows the language to deal
 with the practical use cases of strings efficiently:
-    - Using strings as characters (short strings)
+    - Using strings as characters (small strings)
     - Using strings as enumerations and keys(medium strings)
-    - Using strings as generic data or text buffers (long strings)
+    - Using strings as generic data or text buffers (large strings)
 
 */
 
 tazR_Str tazE_makeStr( tazE_Engine* eng, char const* str, size_t len );
-void     tazE_makeStrBuf( tazE_Engine* eng, tazR_Str str, taz_StrBuf* buf );
-void     tazE_freeStrBuf( tazE_Engine* eng, taz_StrBuf* buf );
-
+void     tazE_borrowStr( tazE_Engine* eng, tazR_Str str, taz_StrLoan* loan );
+void     tazE_returnStr( tazE_Engine* eng, taz_StrLoan* loan );
+void     tazE_stealStr( tazE_Engine* eng, taz_StrLoan* loan );
 unsigned tazE_strHash( tazE_Engine* eng, tazR_Str str );
 bool     tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
 #endif
