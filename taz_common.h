@@ -141,17 +141,16 @@ struct tazR_Obj {
     (tazR_Obj*)((void*)(PTR) - sizeof(tazR_Obj))
 
 /* Note: State Objects
-State objects are used to maintain the state of a subcomponent of the runtime,
-so they need to be fairly flexible when it comes to GC taversal and cleanup.
-Thus state objects are expected to have a `ten_State` member header (as the
-struct's first member) with function pointers to do the respective actions.
-While including such pointers in every object would incur a prohibitive amount
-of memory overhead, state objects are much less common than other types, and
-will never be allocated en masse so the overhead is negilgible.  Either or both
-callback pointers can be set to NULL to opt out of the functionality.
+State objects are general purpose objects for internal runtime use, they'll
+never be exposed on the language end of things; and supply their own GC
+callbacks.  The callback pointers are included in the state objects themselves
+rather than an external vtable since these will generally just be used for
+maintaining the state of certain runtime subsystems; so there usually won't
+be enough of them for the memory overhead to be significant, and avoiding
+the extra dereference will improve GC time by a bit.
 */
 struct tazR_State {
-    void   (*scan)( tazE_Engine* eng, tazR_State* self );
+    void   (*scan)( tazE_Engine* eng, tazR_State* self, bool full );
     void   (*finl)( tazE_Engine* eng, tazR_State* self );
     size_t (*size)( tazE_Engine* eng, tazR_State* self );
 };
@@ -182,8 +181,12 @@ typedef enum {
     #endif
     
     #define tazR_getValType( VAL )    ((VAL).tag)
+    #define tazR_getValByte( VAL )    (uchar)((VAL).tag | (((VAL).u.u & 0xF) << 4))
+    #define tazR_getValHash( VAL )    ((VAL).u.u ^ (VAL).u.u >> 32 ^ (VAL).tag )
     #define tazR_getValRaw( VAL )     ((VAL).u.u)
     #define tazR_getValDec( VAL )     ((VAL).u.d)
+    
+    #define tazR_valEqual( VAL1, VAL2 ) ((VAL1).tag == (VAL2).tag && (VAL1).u.u == (VAL2).u.u)
     
     #define tazR_udf (tazR_TVal){ .tag = tazR_Type_UDF }
     #define tazR_nil (tazR_TVal){ .tag = tazR_Type_NIL }
@@ -204,8 +207,12 @@ typedef enum {
     #endif
     
     #define tazR_getValType( VAL )    (isnan( (VAL).d )? (VAL).u & 0xF : tazR_Type_DEC)
+    #define tazR_getValByte( VAL )    (uchar)((VAL).u & 0xFF)
+    #define tazR_getValHash( VAL )    ((VAL).u ^ (VAL).u >> 32)
     #define tazR_getValRaw( VAL )     (((VAL).u >> 4) & 0xFFFFFFFFFFFF)
     #define tazR_getValDec( VAL )     ((VAL).d)
+    
+    #define tazR_valEqual( VAL1, VAL2 ) ((VAL1).u == (VAL2).u)
     
     #define tazR_udf (tazR_TVal){ .u = 0x7FFLLU << 52 | tazR_Type_UDF }
     #define tazR_nil (tazR_TVal){ .u = 0x7FFLLU << 52 | tazR_Type_NIL }

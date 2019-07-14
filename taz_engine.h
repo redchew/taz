@@ -201,18 +201,18 @@ void tazE_yield( tazE_Engine* eng );
 /* Note: Strings
 The engine is responsible for string pooling, which it can do at its own
 discretion as the rest of the runtime doesn't depend on any particular
-system.  But this implementation breaks strings into three sizes: small,
-medium, and large.  Small strings are those which are 0-5 bytes long, they
+system.  But this implementation breaks strings into three sizes: short,
+medium, and long.  Short strings are those which are 0-5 bytes long, they
 can be encoded within a value payload itself without any additional memory.
 Medium strings are 6-16 bytes long, and are interned to make for more
-efficient comparison.  Large strings are anything larger than 16 bytes,
+efficient comparison.  Long strings are anything larger than 16 bytes,
 these are allocated in independent buffers.
 
 This division of strings into different lengths allows the language to deal
 with the practical use cases of strings efficiently:
-    - Using strings as characters (small strings)
+    - Using strings as characters (short strings)
     - Using strings as enumerations and keys(medium strings)
-    - Using strings as generic data or text buffers (large strings)
+    - Using strings as generic data or text buffers (long strings)
 
 */
 
@@ -222,4 +222,8 @@ void     tazE_returnStr( tazE_Engine* eng, taz_StrLoan* loan );
 void     tazE_stealStr( tazE_Engine* eng, taz_StrLoan* loan );
 unsigned tazE_strHash( tazE_Engine* eng, tazR_Str str );
 bool     tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
+
+#define tazE_strIsLong( ENG, STR ) (((STR) & (0x3LLU << 46)) == 0)
+#define tazE_strIsGCed( ENG, STR ) (((STR) & (0x3LLU << 46)) < 2)
+
 #endif

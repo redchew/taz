@@ -1,3 +1,4 @@
+#define taz_TESTING
 #include "../taz_engine.c"
 #include "test.h"
 #include <string.h>
@@ -31,7 +32,7 @@ struct Cell {
     Cell*      cdr;
 };
 
-static void cellScan( tazE_Engine* eng, tazR_State* self ) {
+static void cellScan( tazE_Engine* eng, tazR_State* self, bool full ) {
     Cell* cell = (Cell*)self;
     
     if( cell->cdr )
@@ -269,5 +270,12 @@ begin_suite( engine_tests )
 end_suite( engine_tests )
 
 int main( void ) {
-    return !run_suite( engine_tests );
+    if( run_suite( engine_tests ) ) {
+        printf( "PASSED\n" );
+        return 0;
+    }
+    else {
+        printf( "FAILED\n" );
+        return 1;
+    }
 }

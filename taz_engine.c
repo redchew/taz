@@ -1,4 +1,9 @@
 #include "taz_engine.h"
+
+#ifndef taz_TESTING
+    #include "taz_index.h"
+#endif
+
 #include <string.h>
 #include <limits.h>
 
@@ -63,12 +68,24 @@ static void  freeMem( EngineFull* eng, void* old, size_t osz ) {
     reallocMem( eng, old, osz, 0 );
 }
 
-#define tazR_finlIdx( ENG, OBJ )
-#define tazR_finlRec( ENG, OBJ )
-#define tazR_finlCode( ENG, OBJ )
-#define tazR_finlFun( ENG, OBJ )
-#define tazR_finlFib( ENG, OBJ )
-#define tazR_finlBox( ENG, OBJ )
+#ifndef tazR_finlIdx
+    #define tazR_finlIdx( ENG, OBJ )
+#endif
+#ifndef tazR_finlRec
+    #define tazR_finlRec( ENG, OBJ )
+#endif
+#ifndef tazR_finlCode
+    #define tazR_finlCode( ENG, OBJ )
+#endif
+#ifndef tazR_finlFun
+    #define tazR_finlFun( ENG, OBJ )
+#endif
+#ifndef tazR_finlFib
+    #define tazR_finlFib( ENG, OBJ )
+#endif
+#ifndef tazR_finlBox
+    #define tazR_finlBox( ENG, OBJ )
+#endif
 
 static void destructObj( EngineFull* eng, tazR_Obj* obj ) {
     void* data = tazR_getObjData( obj );
@@ -101,12 +118,25 @@ static void destructObj( EngineFull* eng, tazR_Obj* obj ) {
     }
 }
 
-#define tazR_sizeofIdx( ENG, OBJ )  0
-#define tazR_sizeofRec( ENG, OBJ )  0
-#define tazR_sizeofCode( ENG, OBJ ) 0
-#define tazR_sizeofFun( ENG, OBJ )  0
-#define tazR_sizeofFib( ENG, OBJ )  0
-#define tazR_sizeofBox( ENG, OBJ )  0
+
+#ifndef tazR_sizeofIdx
+    #define tazR_sizeofIdx( ENG, OBJ ) 1
+#endif
+#ifndef tazR_sizeofRec
+    #define tazR_sizeofRec( ENG, OBJ ) 1
+#endif
+#ifndef tazR_sizeofCode
+    #define tazR_sizeofCode( ENG, OBJ ) 1
+#endif
+#ifndef tazR_sizeofFun
+    #define tazR_sizeofFun( ENG, OBJ ) 1
+#endif
+#ifndef tazR_sizeofFib
+    #define tazR_sizeofFib( ENG, OBJ ) 1
+#endif
+#ifndef tazR_sizeofBox
+    #define tazR_sizeofBox( ENG, OBJ ) 1
+#endif
 
 static void releaseObj( EngineFull* eng, tazR_Obj* obj ) {
     size_t size = sizeof(tazR_Obj);
@@ -142,37 +172,50 @@ static void releaseObj( EngineFull* eng, tazR_Obj* obj ) {
 }
 
 
-#define tazR_scanIdx( ENG, OBJ )
-#define tazR_scanRec( ENG, OBJ )
-#define tazR_scanCode( ENG, OBJ )
-#define tazR_scanFun( ENG, OBJ )
-#define tazR_scanFib( ENG, OBJ )
-#define tazR_scanBox( ENG, OBJ )
 
-static void scanObj( EngineFull* eng, tazR_Obj* obj ) {
+#ifndef tazR_scanIdx
+    #define tazR_scanIdx( ENG, OBJ, FULL )
+#endif
+#ifndef tazR_scanRec
+    #define tazR_scanRec( ENG, OBJ, FULL )
+#endif
+#ifndef tazR_scanCode
+    #define tazR_scanCode( ENG, OBJ, FULL )
+#endif
+#ifndef tazR_scanFun
+    #define tazR_scanFun( ENG, OBJ, FULL )
+#endif
+#ifndef tazR_scanFib
+    #define tazR_scanFib( ENG, OBJ, FULL )
+#endif
+#ifndef tazR_scanBox
+    #define tazR_scanBox( ENG, OBJ, FULL )
+#endif
+
+static void scanObj( EngineFull* eng, tazR_Obj* obj, bool full ) {
     void*  data = tazR_getObjData( obj );
     switch( tazR_getObjType( obj ) ) {
         case tazR_Type_IDX:
-            tazR_scanIdx( (tazE_Engine*)eng, data );
+            tazR_scanIdx( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_REC:
-            tazR_scanRec( (tazE_Engine*)eng, data );
+            tazR_scanRec( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_CODE:
-            tazR_scanCode( (tazE_Engine*)eng, data );
+            tazR_scanCode( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_FUN:
-            tazR_scanFun( (tazE_Engine*)eng, data );
+            tazR_scanFun( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_FIB:
-            tazR_scanFib( (tazE_Engine*)eng, data );
+            tazR_scanFib( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_BOX:
-            tazR_scanBox( (tazE_Engine*)eng, data );
+            tazR_scanBox( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_STATE:
             if( ((tazR_State*)data)->scan )
-                ((tazR_State*)data)->scan( (tazE_Engine*)eng, data );
+                ((tazR_State*)data)->scan( (tazE_Engine*)eng, data, full );
         break;
         default:
             assert( false );
@@ -260,7 +303,7 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     }
 
     while( eng->gcStackTop > 0 )
-        scanObj( eng, eng->gcStackBuf[--eng->gcStackTop] );
+        scanObj( eng, eng->gcStackBuf[--eng->gcStackTop], eng->isFullCycle );
     
     // Sweep.
     tazR_Obj* alive = NULL;
@@ -739,9 +782,9 @@ static void scanWithNewStack( EngineFull* eng, tazR_Obj* obj ) {
     eng->gcStackBuf = buf;
     eng->gcStackTop = 0;
     
-    scanObj( eng, obj );
+    scanObj( eng, obj, eng->isFullCycle );
     while( eng->gcStackTop > 0 )
-        scanObj( eng, eng->gcStackBuf[--eng->gcStackTop] );
+        scanObj( eng, eng->gcStackBuf[--eng->gcStackTop], eng->isFullCycle );
     
     eng->gcStackBuf = obuf;
     eng->gcStackTop = otop;
