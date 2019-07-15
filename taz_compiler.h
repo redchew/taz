@@ -2,7 +2,6 @@
 #define taz_compiler_h
 
 #include "taz_common.h"
-#include "taz_string.h"
 
 typedef struct tazC_Compiler tazC_Compiler;
 typedef struct tazC_Constant tazC_Constant;

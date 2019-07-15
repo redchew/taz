@@ -12,7 +12,7 @@ typedef struct StrPool    StrPool;
 
 struct EngineFull {
     tazE_Engine view;
-    taz_Alloc   alloc;
+    taz_MemCb   alloc;
     
     tazE_Barrier*  barriers;
     tazR_Obj*      objects;
@@ -83,8 +83,8 @@ static void  freeMem( EngineFull* eng, void* old, size_t osz ) {
 #ifndef tazR_finlFib
     #define tazR_finlFib( ENG, OBJ )
 #endif
-#ifndef tazR_finlBox
-    #define tazR_finlBox( ENG, OBJ )
+#ifndef tazR_finlUpv
+    #define tazR_finlUpv( ENG, OBJ )
 #endif
 
 static void destructObj( EngineFull* eng, tazR_Obj* obj ) {
@@ -105,8 +105,8 @@ static void destructObj( EngineFull* eng, tazR_Obj* obj ) {
         case tazR_Type_FIB:
             tazR_finlFib( (tazE_Engine*)eng, data );
         break;
-        case tazR_Type_BOX:
-            tazR_finlBox( (tazE_Engine*)eng, data );
+        case tazR_Type_UPV:
+            tazR_finlUpv( (tazE_Engine*)eng, data );
         break;
         case tazR_Type_STATE:
             if( ((tazR_State*)data)->finl )
@@ -134,8 +134,8 @@ static void destructObj( EngineFull* eng, tazR_Obj* obj ) {
 #ifndef tazR_sizeofFib
     #define tazR_sizeofFib( ENG, OBJ ) 1
 #endif
-#ifndef tazR_sizeofBox
-    #define tazR_sizeofBox( ENG, OBJ ) 1
+#ifndef tazR_sizeofUpv
+    #define tazR_sizeofUpv( ENG, OBJ ) 1
 #endif
 
 static void releaseObj( EngineFull* eng, tazR_Obj* obj ) {
@@ -157,8 +157,8 @@ static void releaseObj( EngineFull* eng, tazR_Obj* obj ) {
         case tazR_Type_FIB:
             size += tazR_sizeofFib( (tazE_Engine*)eng, data );
         break;
-        case tazR_Type_BOX:
-            size += tazR_sizeofBox( (tazE_Engine*)eng, data );
+        case tazR_Type_UPV:
+            size += tazR_sizeofUpv( (tazE_Engine*)eng, data );
         break;
         case tazR_Type_STATE:
             if( ((tazR_State*)data)->size )
@@ -188,8 +188,8 @@ static void releaseObj( EngineFull* eng, tazR_Obj* obj ) {
 #ifndef tazR_scanFib
     #define tazR_scanFib( ENG, OBJ, FULL )
 #endif
-#ifndef tazR_scanBox
-    #define tazR_scanBox( ENG, OBJ, FULL )
+#ifndef tazR_scanUpv
+    #define tazR_scanUpv( ENG, OBJ, FULL )
 #endif
 
 static void scanObj( EngineFull* eng, tazR_Obj* obj, bool full ) {
@@ -210,8 +210,8 @@ static void scanObj( EngineFull* eng, tazR_Obj* obj, bool full ) {
         case tazR_Type_FIB:
             tazR_scanFib( (tazE_Engine*)eng, data, full );
         break;
-        case tazR_Type_BOX:
-            tazR_scanBox( (tazE_Engine*)eng, data, full );
+        case tazR_Type_UPV:
+            tazR_scanUpv( (tazE_Engine*)eng, data, full );
         break;
         case tazR_Type_STATE:
             if( ((tazR_State*)data)->scan )
@@ -701,7 +701,7 @@ static void finishStringGC( tazE_Engine* _eng ) {
 /*************************** API Functions ************************************/
 
 tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
-    taz_Alloc        alloc = cfg->alloc;
+    taz_MemCb   alloc = cfg->alloc;
     EngineFull* eng   = alloc( NULL, 0, sizeof(EngineFull) );
     
     eng->view.modPool  = NULL;

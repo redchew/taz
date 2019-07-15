@@ -72,7 +72,7 @@ typedef enum {
     tazR_Type_CODE,
     tazR_Type_FUN,
     tazR_Type_FIB,
-    tazR_Type_BOX,
+    tazR_Type_UPV,
     tazR_Type_STATE,
     tazR_Type_LAST_OBJECT = tazR_Type_STATE,
     
@@ -91,7 +91,7 @@ typedef struct tazR_Obj   tazR_Obj;
 typedef struct tazR_State tazR_State;
 typedef struct tazR_Idx   tazR_Idx;
 typedef struct tazR_Rec   tazR_Rec;
-typedef struct tazR_Box   tazR_Box;
+typedef struct tazR_Upv   tazR_Upv;
 typedef struct tazR_Code  tazR_Code;
 typedef struct tazR_Fun   tazR_Fun;
 typedef struct tazR_Fib   tazR_Fib;
@@ -158,7 +158,7 @@ struct tazR_State {
 typedef enum {
     tazR_RefType_GLOBAL,
     tazR_RefType_LOCAL,
-    tazR_RefType_BOXED
+    tazR_RefType_UPVAL
 } tazR_RefType;
 
 #if taz_CONFIG_DISABLE_NAN_TAGGING
@@ -229,7 +229,7 @@ typedef enum {
 #define tazR_getValCode( VAL )  ((tazR_Code*)tazR_getValObj( VAL ))
 #define tazR_getValFun( VAL )   ((tazR_Fun*)tazR_getValObj( VAL ))
 #define tazR_getValFib( VAL )   ((tazR_Fib*)tazR_getValObj( VAL ))
-#define tazR_getValBox( VAL )   ((tazR_Box*)tazR_getValObj( VAL ))
+#define tazR_getValUpv( VAL )   ((tazR_Upv*)tazR_getValObj( VAL ))
 #define tazR_getValState( VAL ) ((tazR_State*)tazR_getValObj( VAL ))
 
 #define tazR_objVal( VAL )      tazR_othVal( tazR_getObjType( tazR_toObj( (VAL) ) ), (VAL) )
@@ -243,7 +243,7 @@ typedef enum {
 #define tazR_codeVal( VAL )     tazR_othVal( tazR_Type_CODE, (VAL) )
 #define tazR_funVal( VAL )      tazR_othVal( tazR_Type_FUN, (VAL) )
 #define tazR_fibVal( VAL )      tazR_othVal( tazR_Type_FIB, (VAL) )
-#define tazR_boxVal( VAL )      tazR_othVal( tazR_Type_BOX, (VAL) )
+#define tazR_upvVal( VAL )      tazR_othVal( tazR_Type_UPV, (VAL) )
 #define tazR_stateVal( VAL )    tazR_othVal( tazR_Type_STATE, (VAL) )
 
 
