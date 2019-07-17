@@ -93,24 +93,20 @@ struct tazR_Idx {
     void     (*scan)( tazE_Engine* eng, tazR_Idx* idx );
 };
 
-#define ROW_CAP (63)
+#define ROW_CAP (28)
 
-static unsigned const bufCapTable[] = {
-    7,          14,         21,         28,         35,
-    42,         49,         56,         112,        168,
-    224,        280,        336,        392,        448,
-    896,        1344,       1792,       2240,       2688,
-    3136,       3584,       7168,       10752,      14336,
-    17920,      21504,      25088,      50176,      75264,
-    100352,     125440,     150528,     175616,     200704,
-    401408,     602112,     802816,     1003520,    1204224,
-    1404928,    1605632,    3211264,    4816896,    6422528,
-    8028160,    9633792,    11239424,   12845056,   25690112,
-    38535168,   51380224,   64225280,   77070336,   89915392,
-    102760448, 205520896,   308281344,  411041792,  513802240,
-    616562688, 719323136,   822083584
+/* Note: Prime Numbers
+These numbers mostly come from: https://planetmath.org/goodhashtableprimes;
+with a few numbers added at beginning for a smaller initial index size.
+*/
+static unsigned const bufCapTable[ROW_CAP] = {
+    17,         31,         53,         97,         193,
+    389,        769,        1543,       3079,       6151,
+    12289,      24593,      49157,      98317,      196613,
+    393241,     786433,     1572869,    3145739,    6291469,
+    12582917,   25165843,   50331653,   100663319,  201326611,
+    402653189,  805306457,  1610612741
 };
-static_assert( elemsof(bufCapTable) == ROW_CAP, "Wrong number of rows" );
 
 static unsigned bitCapTable[ROW_CAP] = { 0 };
 
