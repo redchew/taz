@@ -93,13 +93,13 @@ struct tazR_Idx {
     void     (*scan)( tazE_Engine* eng, tazR_Idx* idx );
 };
 
-#define ROW_CAP (28)
+#define IDX_ROW_CAP (28)
 
 /* Note: Prime Numbers
 These numbers mostly come from: https://planetmath.org/goodhashtableprimes;
 with a few numbers added at beginning for a smaller initial index size.
 */
-static unsigned const bufCapTable[ROW_CAP] = {
+static unsigned const bufCapTable[IDX_ROW_CAP] = {
     17,         31,         53,         97,         193,
     389,        769,        1543,       3079,       6151,
     12289,      24593,      49157,      98317,      196613,
@@ -108,10 +108,10 @@ static unsigned const bufCapTable[ROW_CAP] = {
     402653189,  805306457,  1610612741
 };
 
-static unsigned bitCapTable[ROW_CAP] = { 0 };
+static unsigned bitCapTable[IDX_ROW_CAP] = { 0 };
 
 static void bitCapTableInit( void ) {
-    for( unsigned i = 0 ; i < ROW_CAP ; i++ )
+    for( unsigned i = 0 ; i < IDX_ROW_CAP ; i++ )
         bitCapTable[i] = (bufCapTable[i] + sizeof(ulongest))/sizeof(ulongest);
 }
 
@@ -131,18 +131,18 @@ static unsigned ulog2( unsigned u ) {
     return log;
 }
 
-static unsigned stepLimitToleranceTable[ROW_CAP] = { 0 };
+static unsigned stepLimitToleranceTable[IDX_ROW_CAP] = { 0 };
 
 static void stepLimitToleranceTableInit( void ) {
-    for( unsigned i = 0 ; i < ROW_CAP ; i++ ) {
+    for( unsigned i = 0 ; i < IDX_ROW_CAP ; i++ ) {
         stepLimitToleranceTable[i] = ulog2( bufCapTable[i] )*taz_CONFIG_INDEX_STEP_LIMIT_TOLERANCE_KNOB;
     }
 }
 
-static unsigned idealStepLimitTable[ROW_CAP] = { 0 };
+static unsigned idealStepLimitTable[IDX_ROW_CAP] = { 0 };
 
 static void idealStepLimitTableInit( void ) {
-    for( unsigned i = 0 ; i < ROW_CAP ; i++ ) {
+    for( unsigned i = 0 ; i < IDX_ROW_CAP ; i++ ) {
         idealStepLimitTable[i] = ulog2( bufCapTable[i] )*taz_CONFIG_INDEX_IDEAL_STEP_LIMIT_KNOB;
     }
 }
@@ -448,7 +448,7 @@ static void scanWhenHasStrings( tazE_Engine* eng, tazR_Idx* idx ) {
 }
 
 static void growIdx( tazE_Engine* eng, tazR_Idx* idx ) {
-    assert( idx->row < ROW_CAP );
+    assert( idx->row + 1 < IDX_ROW_CAP );
     unsigned orow    = idx->row;
     KeyLoc*  obuf    = idx->buf;
     
@@ -501,6 +501,10 @@ unsigned tazR_idxInsert( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal key ) {
 
 long tazR_idxLookup( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal key ) {
     return idx->lookup( eng, idx, key );
+}
+
+unsigned tazR_idxNumKeys( tazE_Engine* eng, tazR_Idx* idx ) {
+    return idx->loc;
 }
 
 tazR_Idx* tazR_subIdx( tazE_Engine* eng, tazR_Idx* idx, unsigned n, bool* select, long* locs ) {
