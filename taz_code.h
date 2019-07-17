@@ -1,22 +1,24 @@
 #ifndef taz_code_h
 #define taz_code_h
+#include "taz_common.h"
 
-typedef enum   tazR_CodeType   tazR_CodeType;
-typedef struct tazR_ByteCode   tazR_ByteCode;
-typedef struct tazR_NativeCode tazR_NativeCode;
-typedef struct tazR_Label      tazR_Label;
+typedef enum   tazR_CodeType tazR_CodeType;
+typedef struct tazR_ByteCode tazR_ByteCode;
+typedef struct tazR_HostCode tazR_HostCode;
+typedef struct tazR_Label    tazR_Label;
 
 enum tazR_CodeType {
-    tazR_CodeType_NATIVE,
+    tazR_CodeType_HOST,
     tazR_CodeType_BYTE
 };
 
 struct tazR_Code {
     tazR_CodeType type;
+    taz_Scope     scope;
     tazR_Str      name;
 
     unsigned numFixedParams;
-    bool     hasVarParam;
+    bool     hasVarParams;
 
     tazR_Idx* upvalIdx;
     unsigned  numUpvals;
@@ -25,7 +27,7 @@ struct tazR_Code {
     unsigned  numLocals;
 };
 
-struct tazR_NativeCode {
+struct tazR_HostCode {
     tazR_Code base;
 
     size_t    stateSize;
@@ -34,36 +36,35 @@ struct tazR_NativeCode {
 
 struct tazR_Label {
     ulongest* addr;
-    unsigned  byte;
+    unsigned  shift;
 };
 
 struct tazR_ByteCode {
-    taz_Code base;
+    tazR_Code base;
 
-    tazR_TVal* constBuf;
-    unsigned   numConsts;
+    tazR_TVal const* constBuf;
+    unsigned numConsts;
 
-    tazR_Label* labelBuf;
-    unsigned    numLabels;
+    tazR_Label const* labelBuf;
+    unsigned numLabels;
 
-    size_t   len;
-    ulongest code[];
+    ulongest const* wordBuf;
+    unsigned numWords;
 };
 
 
-tazC_Assembler*  tazR_makeAssembler( tazE_Engine* eng );
-tazR_ByteCode*   tazR_makeByteCode( tazE_Engine* eng, tazC_Assembler* );
-tazR_NativeCode* tazR_makeNativeCode( tazE_Engine* eng, taz_FunCb cb, char const* name, char const** params, char const** upvals );
+tazC_Assembler* tazR_makeAssembler( tazE_Engine* eng, tazR_Str name, taz_Scope scope );
+tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char const* name, char const** params, char const** upvals );
 
 void tazR_dumpCode( tazE_Engine* eng, tazR_Code* code, taz_Writer* w );
 
 #define tazR_scanCode _tazR_scanCode
 void _tazR_scanCode( tazE_Engine* eng, tazR_Code* code, bool full );
 
-#define tazR_sizeofCode( ENG, CODE ) (                              \
-    ((tazR_Code*)(CODE))->type == tazR_CodeType_NATIVE              \
-        ? sizeof(tazR_NativeCode)                                   \
-        : sizeof(tazR_ByteCode) + ((tazR_Bytecode*)(CODE))->len     \
+#define tazR_sizeofCode( ENG, CODE ) (                                                  \
+    ((tazR_Code*)(CODE))->type == tazR_CodeType_HOST                                    \
+        ? sizeof(tazR_HostCode)                                                         \
+        : sizeof(tazR_ByteCode) + ((tazR_ByteCode*)(CODE))->numWords*sizeof(ulongest)   \
 )
 
 #define tazR_finlCode _tazR_finlCode

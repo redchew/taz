@@ -26,6 +26,7 @@ typedef struct tazR_IdxIter tazR_IdxIter;
 tazR_Idx* tazR_makeIdx( tazE_Engine* eng );
 unsigned  tazR_idxInsert( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal key );
 long      tazR_idxLookup( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal key );
+unsigned  tazR_idxNumKeys( tazE_Engine* eng, tazR_Idx* idx );
 
 
 tazR_Idx* tazR_subIdx( tazE_Engine* eng, tazR_Idx* idx, unsigned n, bool* select, long* locs );

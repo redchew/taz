@@ -25,9 +25,20 @@ typedef struct tazE_Listener  tazE_Listener;
 typedef enum   tazE_EventType tazE_EventType;
 
 struct tazE_Engine {
-    tazR_State* modPool;
-    tazR_State* fmtState;
-    tazR_State* apiState;
+    tazR_State* environment;
+    tazR_State* formatter;
+    tazR_State* interface;
+
+    tazR_TVal errvalBadAlloc;
+    tazR_TVal errvalBadKey;
+    tazR_TVal errvalTooManyLocals;
+    tazR_TVal errvalTooManyUpvals;
+    tazR_TVal errvalTooManyConsts;
+    tazR_TVal errvalBadParamName;
+    tazR_TVal errvalBadUpvalName;
+    tazR_TVal errvalMultipleEllipsis;
+    tazR_TVal errvalSetFromUdf;
+    tazR_TVal errvalSetToUdf;
 };
 
 tazE_Engine* tazE_makeEngine( taz_Config const* cfg );

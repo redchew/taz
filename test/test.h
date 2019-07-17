@@ -60,10 +60,6 @@ static bool suite_ ## NAME( void ) {                                           \
 #define end_suite( NAME )                                                      \
     printf( "---\n" );\
     printf( "Total: %u, Passed: %u, Failed: %u\n", total, passed, failed );    \
-    if( failed == 0 )                                                          \
-        printf( "Passed All Tests\n" );                                        \
-    else                                                                       \
-        printf( "Failed Some Tests\n" );                                       \
     printf( "============================================================\n" );\
     return failed == 0;                                                        \
 }

@@ -20,7 +20,7 @@ Where `c` represents an opcode bit and `x` an operand bit.  This gives up
 to 8 operand values, suitable for encoding smaller variable numbers and
 such.  Two byte instructions look like this:
 
-    B: xvvccccc xxxxxxxx
+    B: xxxxxxxx xvvccccc
 
 Where `c` bits give the opcode, `v` bits give any variations, and `x` bits
 give the main operand.  These forms are referred to as A-form and B-form
@@ -45,11 +45,21 @@ Where `X` gives the instruction operand (all `x` bits).  We try to keep the
 more common instructions clustered at the lower opcodes to improve the
 performance of the instruction cache within the interpret loop.  The SE won't
 give the exact stack effect of an instruction, but the worst case effect,
-meaning the one which grows the stack most, or shrinks it least.
+meaning the one which grows the stack most, or shrinks it least.  The TUP_PAD
+macro will be mentioned in the SE where a tuple of unknown size is expected
+to emerge; this isn't the max size of the tuple, but if anything larger is
+created by the instruction then it'll manually ensure that the stack has room
+for it.  Some entries will put UNKONWN for the SE, which indicates that the
+stack effect can't be estimated at compile time, and the instruction will
+always manually ensure that there's enough room on the stack for its result.
 
 The actual opcode value for each listing is implicit, matching the entry's
 location in the listing.
 */
+
+/* Brief: Does nothing
+*/
+OP( NOP, A, SE( 0, 0 ) )
 
 /* Brief: Access lower variables and constants
 */
@@ -119,14 +129,28 @@ OP( OR, A, SE( 0, -1 ) )
 
 /* Brief: Function linkage
 */
-OP( CALL, A, SE( 0, TUP_MAX ) )
+OP( CALL, A, SE( 0, TUP_PAD ) )
 OP( RET, A, SE( 0, 0 ) ) 
 
 /* Brief: Stack manipulation
 */
 OP( POP, A, SE( 0, -1 ) )
-OP( DUP, A, SE( 0, TUP_MAX + 1 ) )
+OP( DUP, A, SE( 0, TUP_PAD + 1 ) )
 OP( SWAP, A, SE( 0, 0 ) )
+
+/* Brief: Spread a record or tuple
+Given the two top stack value/tuples these instructions
+combine the two into a single tuple.  The SPREAD_IN_TUP
+opcode spreads the values of records and tuples by order,
+omitting keys, and taking only the fields of the record
+keyed by integral values, and between 0 and the first
+such undefined field.  The SPREAD_IN_REC opcode spreads
+the values of tuples and records as key-value pairs, so
+record fields are expanded to pairs, and tuple entries
+are given implicit integral keys based on ordering.
+*/
+OP( SPREAD_IN_TUP, A, UNKONWN )
+OP( SPREAD_IN_REC, A, UNKONWN )
 
 /* Brief: Assignments
 The variation bits here indicate the language level assignment pattern
@@ -159,3 +183,19 @@ OP( GET_FIELD_B, B, SE( 0, -1 ) )
 OP( AND_JUMP_B, B, SE( 0, 0 ) )
 OP( OR_JUMP_B, B, SE( 0, 0 ) )
 OP( ALT_JUMP_B, B, SE( 0, 0 ) )
+
+/* Brief: Create a reference value
+Use the `v` bits to indicate reference type:
+
+    00 - Const
+    01 - Global
+    10 - Upval
+    11 - Local
+*/
+OP( REF, B, SE( 0, 1 ) )
+
+/* Brief: Add a tuple header
+Adds a tuple header grouping the top N stack values.
+*/
+OP( TUP, B, SE( 0, 1 ) )
+

@@ -2,6 +2,8 @@
 
 #ifndef taz_TESTING
     #include "taz_index.h"
+    #include "taz_code.h"
+    #include "taz_record.h"
 #endif
 
 #include <string.h>
@@ -33,8 +35,6 @@ struct EngineFull {
     
     tazR_Obj* gcFirstStackBuf[taz_CONFIG_GC_STACK_SEGMENT_SIZE];
     
-    tazR_TVal errvalBadAlloc;
-    
     StrPool* strPool;
 };
 
@@ -44,6 +44,8 @@ static void collect( EngineFull* eng, size_t nsz, bool full );
 
 static void* reallocMem( EngineFull* eng, void* old, size_t osz, size_t nsz ) {
     assert( !eng->isGCRunning || nsz == 0 );
+    if( osz == nsz )
+        return old;
     
     if( eng->memUsed - osz + nsz > eng->memLimit  )
         collect( eng, nsz, false );
@@ -52,7 +54,7 @@ static void* reallocMem( EngineFull* eng, void* old, size_t osz, size_t nsz ) {
     if( !mem && nsz > 0 ) {
         collect( eng, nsz, false );
         if( !mem )
-            tazE_error( (tazE_Engine*)eng, taz_ErrNum_FATAL, eng->errvalBadAlloc );
+            tazE_error( (tazE_Engine*)eng, taz_ErrNum_FATAL, eng->view.errvalBadAlloc );
     }
     
     eng->memUsed -= osz;
@@ -274,13 +276,23 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     }
     
     // Scan.
-    tazE_markVal( (tazE_Engine*)eng, eng->errvalBadAlloc );
-    if( eng->view.modPool )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.modPool );
-    if( eng->view.fmtState )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.fmtState );
-    if( eng->view.apiState )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.apiState );
+    tazE_markVal( &eng->view, eng->view.errvalBadAlloc );
+    tazE_markVal( &eng->view, eng->view.errvalBadKey );
+    tazE_markVal( &eng->view, eng->view.errvalTooManyLocals );
+    tazE_markVal( &eng->view, eng->view.errvalTooManyUpvals );
+    tazE_markVal( &eng->view, eng->view.errvalTooManyConsts );
+    tazE_markVal( &eng->view, eng->view.errvalBadParamName );
+    tazE_markVal( &eng->view, eng->view.errvalBadUpvalName );
+    tazE_markVal( &eng->view, eng->view.errvalMultipleEllipsis );
+    tazE_markVal( &eng->view, eng->view.errvalSetFromUdf );
+    tazE_markVal( &eng->view, eng->view.errvalSetToUdf );
+
+    if( eng->view.environment )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.environment );
+    if( eng->view.formatter )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.formatter );
+    if( eng->view.interface )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.interface );
     
     tazE_Barrier* barIt = eng->barriers;
     while( barIt ) {
@@ -704,9 +716,9 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     taz_MemCb   alloc = cfg->alloc;
     EngineFull* eng   = alloc( NULL, 0, sizeof(EngineFull) );
     
-    eng->view.modPool  = NULL;
-    eng->view.fmtState = NULL;
-    eng->view.apiState = NULL;
+    eng->view.environment  = NULL;
+    eng->view.formatter    = NULL;
+    eng->view.interface    = NULL;
     eng->alloc         = alloc;
     eng->barriers      = NULL;
     eng->objects       = NULL;
@@ -721,9 +733,6 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     eng->gcStackBuf    = eng->gcFirstStackBuf;
     eng->gcDisabled    = true;
     
-    /// Replace this with a string at some point.
-    eng->errvalBadAlloc = tazR_udf;
-    
     // This should come last, as it relies on the engine being
     // semi-functional.
     tazE_Barrier bar = { 0 };
@@ -735,10 +744,25 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     
     tazE_pushBarrier( (tazE_Engine*)eng, &bar );
     eng->strPool = makeStrPool( (tazE_Engine*)eng );
+
+    // These rely on string pool functionality, so must come
+    // after the previous segment.
+    #define ERRVAL( WHICH, STR ) \
+        eng->view.errval ## WHICH = tazR_strVal( tazE_makeStr( &eng->view, STR, sizeof(STR)-1 ) )
+    ERRVAL( BadAlloc, "Memory allocation error" );
+    ERRVAL( BadKey, "Invalid type used for record key" );
+    ERRVAL( TooManyLocals, "Local variable limit exceeded in function" );
+    ERRVAL( TooManyUpvals, "Upvalue limit exceeded in function" );
+    ERRVAL( TooManyConsts, "Constant value limit exceeded in function" );
+    ERRVAL( BadParamName, "Invalid parameter name" );
+    ERRVAL( BadUpvalName, "Invalid upvalue name" );
+    ERRVAL( MultipleEllipsis, "Multiple ellipsis given in parameter or variable list" );
+    ERRVAL( SetFromUdf, "Attempt to set record field or variable from `udf` value" );
+    ERRVAL( SetToUdf, "Attempt to set undefined variable or record field" );
+
     tazE_popBarrier( (tazE_Engine*)eng, &bar );
-    
     eng->gcDisabled = false;
-    
+
     return (tazE_Engine*)eng;
 }
 

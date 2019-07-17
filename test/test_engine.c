@@ -18,9 +18,9 @@ static void* alloc( void* old, size_t osz, size_t nsz ) {
     tazE_freeEngine( eng );
 
 begin_test( make_and_free_engine, SETUP_ENGINE )
-    check( eng->modPool == NULL );
-    check( eng->fmtState == NULL );
-    check( eng->apiState == NULL );
+    check( eng->environment == NULL );
+    check( eng->formatter == NULL );
+    check( eng->interface == NULL );
 end_test( make_and_free_engine, TEARDOWN_ENGINE )
 
 

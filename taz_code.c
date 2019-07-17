@@ -130,10 +130,12 @@ static tazR_Ref addConst( tazC_Assembler* _as, tazR_TVal val ) {
     tazR_TVal* konst = ConstBuf_put( as->eng, &as->consts );
     *konst = val;
 
-    return (tazR_Ref){ .bits = {
-        .type = tazR_RefType_CONST,
-        as->consts.top - 1
-    }};
+    unsigned loc = as->consts.top - 1;
+    tazR_Ref ref = { .bits = { .type = tazR_RefType_CONST, .which = loc } };
+    if( loc > ref.bits.which )
+        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyConsts );
+
+    return ref;
 }
 
 static tazR_Ref addUpval( tazC_Assembler* _as, tazR_Str name ) {
@@ -144,7 +146,7 @@ static tazR_Ref addUpval( tazC_Assembler* _as, tazR_Str name ) {
     ref.bits.type  = tazR_RefType_UPVAL;
     ref.bits.which = loc;
     if( loc > ref.bits.which )
-        tazE_error( as->eng, taz_ErrNum_COMPILE, tazR_nil ); // TODO: add error message
+        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyUpvals );
 
     as->numUpvals++;
     return ref;
@@ -164,7 +166,7 @@ static tazR_Ref addLocal( tazC_Assembler* _as, tazR_Str name ) {
         ref.bits.type  = tazR_RefType_LOCAL;
         ref.bits.which = loc;
         if( loc > ref.bits.which )
-            tazE_error( as->eng, taz_ErrNum_COMPILE, tazR_nil );
+            tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
         
         as->numLocals++;
     }
@@ -178,16 +180,14 @@ static tazR_Ref addParam( tazC_Assembler* _as, tazR_Str name, bool var ) {
 
     tazR_Ref ref;
     if( as->scope == taz_Scope_GLOBAL ) {
-        // TODO
-        assert( false );
-        ref.flat = 0;
+        assert( false ); // Global scoped functions can't have params
     }
     else {
         unsigned loc = tazR_idxInsert( as->eng, as->localIdx, tazR_strVal( name ) );
         ref.bits.type  = tazR_RefType_LOCAL;
         ref.bits.which = loc;
         if( loc > ref.bits.which )
-            tazE_error( as->eng, taz_ErrNum_COMPILE, tazR_nil );
+            tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
         
         if( var )
             as->hasVarParams = true;
@@ -270,6 +270,7 @@ static tazR_Code* makeByteCode( tazC_Assembler* _as ) {
     tazE_ObjAnchor codeA;
     tazR_ByteCode* code = tazE_mallocObj( as->eng, &codeA, sizeof(tazR_ByteCode), tazR_Type_CODE );
     code->base.type           = tazR_CodeType_BYTE;
+    code->base.scope          = as->scope;
     code->base.name           = as->name;
     code->base.numFixedParams = as->numFixedParams;
     code->base.hasVarParams   = as->hasVarParams;
@@ -419,9 +420,9 @@ tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char co
     for( unsigned i = 0 ; params[i] != NULL ; i++ ) {
         bool isVar = false;
         if( !checkParamName( params[i], &isVar ) )
-            tazE_error( eng, taz_ErrNum_OTHER, tazR_nil ); // TODO: add error message
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
         if( code->base.hasVarParams && isVar )
-            tazE_error( eng, taz_ErrNum_OTHER, tazR_nil ); // TODO: add error message
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalMultipleEllipsis );
         
         if( isVar ) {
             code->base.hasVarParams = true;
@@ -435,7 +436,7 @@ tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char co
 
     for( unsigned i = 0 ; upvals[i] != NULL ; i++ ) {
         if( !checkUpvalName( upvals[i] ) )
-            tazE_error( eng, taz_ErrNum_OTHER, tazR_nil ); // TODO: add error message
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadUpvalName );
         code->base.numUpvals++;
         tazR_idxInsert( eng, upvalIdx, tazR_strVal( tazE_makeStr( eng, params[i], strlen( params[i] ) ) ) );
     }

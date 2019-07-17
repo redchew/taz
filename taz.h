@@ -3,19 +3,19 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-typedef struct taz_Instance taz_Instance;
-typedef struct taz_Config   taz_Config;
-typedef struct taz_Var      taz_Var;
-typedef struct taz_Call     taz_Call;
-typedef struct taz_StrLoan  taz_StrLoan;
-typedef enum   taz_ErrNum   taz_ErrNum;
-typedef enum   taz_Scope    taz_Scope;
+typedef struct taz_Interface taz_Interface;
+typedef struct taz_Config    taz_Config;
+typedef struct taz_Var       taz_Var;
+typedef struct taz_Call      taz_Call;
+typedef struct taz_StrLoan   taz_StrLoan;
+typedef enum   taz_ErrNum    taz_ErrNum;
+typedef enum   taz_Scope     taz_Scope;
 
 typedef struct taz_Reader taz_Reader;
 typedef struct taz_Writer taz_Writer;
 
 typedef void* (*taz_MemCb)( void* old, size_t osz, size_t nsz );
-typedef void  (*taz_FunCb)( taz_Instance* taz, taz_Call* call );
+typedef void  (*taz_FunCb)( taz_Interface* taz, taz_Call* call );
 
 struct taz_Config {
     taz_MemCb alloc;
@@ -38,6 +38,7 @@ enum taz_ErrNum {
     taz_ErrNum_NONE,
     taz_ErrNum_FATAL,
     taz_ErrNum_PANIC,
+    taz_ErrNum_COMPILE,
     taz_ErrNum_OTHER
 };
 

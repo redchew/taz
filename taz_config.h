@@ -1,8 +1,13 @@
 #ifndef taz_config_h
 #define taz_config_h
+#include <stdint.h>
 
 #ifndef taz_CONFIG_DISABLE_PTR_TAGGING
-    #define taz_CONFIG_DISABLE_PTR_TAGGING (0)
+    #if UINTPTR_MAX > 0xFFFFFFFFFFFFLLU
+        #define taz_CONFIG_DISABLE_PTR_TAGGING (0)
+    #else
+        #define taz_CONFIG_DISABLE_PTR_TAGGING (1)
+    #endif
 #endif
 
 #ifndef taz_CONFIG_DISABLE_NAN_TAGGING

@@ -85,7 +85,7 @@ typedef int32  tazR_Int;
 typedef double tazR_Dec;
 typedef uint64 tazR_Str;
 typedef uint8  tazR_Tup;
-typedef uint16 tazR_Ref;
+typedef union  tazR_Ref tazR_Ref;
 
 typedef struct tazR_Obj   tazR_Obj;
 typedef struct tazR_State tazR_State;
@@ -96,7 +96,9 @@ typedef struct tazR_Code  tazR_Code;
 typedef struct tazR_Fun   tazR_Fun;
 typedef struct tazR_Fib   tazR_Fib;
 
-typedef struct tazE_Engine tazE_Engine;
+typedef struct tazE_Engine    tazE_Engine;
+typedef struct tazC_Assembler tazC_Assembler;
+typedef enum   tazR_OpCode    tazR_OpCode;
 
 #if taz_CONFIG_DISABLE_PTR_TAGGING
     typedef struct {
@@ -108,7 +110,7 @@ typedef struct tazE_Engine tazE_Engine;
     #define tazR_getPtrTag( PTR )                   ((PTR).tag)
     #define tazR_getPtrAddr( PTR )                  ((PTR).addr)
 #else
-    typedef uint64 tazR_TPtr;
+    typedef uintptr_t tazR_TPtr;
 
     #define tazR_makeTPtr( TAG, ADDR )              ((uint64)(ADDR) << 16 | (TAG))
     #define tazR_getPtrTag( PTR )                   ((PTR) & 0xFFFF )
@@ -156,10 +158,19 @@ struct tazR_State {
 };
 
 typedef enum {
-    tazR_RefType_GLOBAL,
+    tazR_RefType_CONST,
     tazR_RefType_LOCAL,
     tazR_RefType_UPVAL
 } tazR_RefType;
+
+union tazR_Ref {
+    struct {
+        unsigned type:  2;
+        unsigned which: 16;
+    } bits;
+
+    ulong flat;
+};
 
 #if taz_CONFIG_DISABLE_NAN_TAGGING
     
@@ -237,7 +248,7 @@ typedef enum {
 #define tazR_intVal( VAL )      tazR_othVal( tazR_Type_INT, (VAL) )
 #define tazR_strVal( VAL )      tazR_othVal( tazR_Type_INT, (VAL) )
 #define tazR_tupVal( VAL )      tazR_othVal( tazR_Type_TUP, (VAL) )
-#define tazR_refVal( VAL )      tazR_othVal( tazR_Type_REF, (VAL) )
+#define tazR_refVal( VAL )      tazR_othVal( tazR_Type_REF, (VAL).flat )
 #define tazR_idxVal( VAL )      tazR_othVal( tazR_Type_IDX, (VAL) )
 #define tazR_recVal( VAL )      tazR_othVal( tazR_Type_REC, (VAL) )
 #define tazR_codeVal( VAL )     tazR_othVal( tazR_Type_CODE, (VAL) )
@@ -263,4 +274,28 @@ typedef enum {
 
 
 #define elemsof( BUF ) (sizeof(BUF)/sizeof(BUF[0]))
+
+
+
+struct tazC_Assembler {
+    tazR_State base;
+
+    unsigned (*addLabel)( tazC_Assembler* as, size_t where );
+    size_t   (*addInstr)( tazC_Assembler* as, unsigned opcode, unsigned v, unsigned x );
+    tazR_Ref (*addConst)( tazC_Assembler* as, tazR_TVal val );
+    tazR_Ref (*addUpval)( tazC_Assembler* as, tazR_Str name );
+    tazR_Ref (*addLocal)( tazC_Assembler* as, tazR_Str name );
+    tazR_Ref (*addParam)( tazC_Assembler* as, tazR_Str name, bool var );
+    
+    tazC_Assembler* (*makeAssembler)( tazC_Assembler* as, tazR_Str name );
+    tazR_Code*      (*makeCode)( tazC_Assembler* as );
+};
+
+#define OP( NAME, FORM, SE ) tazR_OpCode_ ## NAME,
+enum tazR_OpCode {
+    #include "include/taz_opcodes.in.c"
+};
+#undef OP
+
+
 #endif
