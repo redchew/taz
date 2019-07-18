@@ -218,7 +218,7 @@ union tazR_Ref {
     #endif
     
     #define tazR_getValType( VAL )    (isnan( (VAL).d )? (VAL).u & 0xF : tazR_Type_DEC)
-    #define tazR_getValByte( VAL )    (uchar)((VAL).u & 0xFF)
+    #define tazR_getValByte( VAL )    (uchar)(isnan( (VAL).d ) ? (VAL).u & 0xFF : ((VAL).u & 0xF) << 4 | tazR_Type_DEC)
     #define tazR_getValHash( VAL )    ((VAL).u ^ (VAL).u >> 32)
     #define tazR_getValRaw( VAL )     (((VAL).u >> 4) & 0xFFFFFFFFFFFF)
     #define tazR_getValDec( VAL )     ((VAL).d)
