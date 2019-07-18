@@ -59,7 +59,7 @@ struct tazR_Idx {
     
     // Bitmap used for lookup optimization, we use the longest standard
     // integral type to allow for optimized memory fetches for systems
-    // that support fetching larger words, but the bitmap is scanned on
+    // with larger memory buses, but the bitmap is scanned on
     // a byte-per-byte basis.  Also, since the `bitmap` and `buf` will
     // always be resized together, the bitmap doens't get its own memory
     // allocation, it's just tacked onto the end of `buf`.
@@ -430,12 +430,12 @@ static long lookupWhenHasLongStrings( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal
 
 static void scanWhenHasStrings( tazE_Engine* eng, tazR_Idx* idx ) {
     unsigned const bitCap = bitCapTable[idx->row];
-    for( unsigned i = 0 ; i < bitCap ; i++ ) {
+    for( unsigned j = 0 ; j < bitCap ; j++ ) {
         unsigned k = 0;
-        unsigned u = idx->bitmap[i];
+        ulongest u = idx->bitmap[j];
         while( u ) {
             if( (u & 0xF) == tazR_Type_STR ) {
-                unsigned i = i*sizeof(ulongest) + k;
+                unsigned i = j*sizeof(ulongest) + k;
                 
                 tazR_Str str = tazR_getValStr( idx->buf[i].key );
                 if( tazE_strIsGCed( eng, str ) )
@@ -449,17 +449,29 @@ static void scanWhenHasStrings( tazE_Engine* eng, tazR_Idx* idx ) {
 
 static void growIdx( tazE_Engine* eng, tazR_Idx* idx ) {
     assert( idx->row + 1 < IDX_ROW_CAP );
-    unsigned orow    = idx->row;
-    KeyLoc*  obuf    = idx->buf;
+
+    struct {
+        tazE_Bucket baes;
+        tazR_TVal   old;
+    } buc;
+    tazE_addBucket( eng, &buc, 1 );
+
+    // Move the indice's old buffers to a temporary index to
+    // make sure they're scanned properly for GC while resizing.
+    tazE_ObjAnchor oldA;
+    tazR_Idx* old = tazE_mallocObj( eng, &oldA, sizeof(tazR_Idx), tazR_Type_IDX );
+    *old = *idx;
+    tazE_commitObj( eng, &oldA );
+    buc.old = tazR_idxVal( old );
     
-    
-    idx->row++;
+    unsigned nrow = idx->row + 1;
     tazE_RawAnchor rawA;
-    size_t bufSize = bufCapTable[idx->row]*sizeof(KeyLoc);
-    size_t bitSize = bitCapTable[idx->row]*sizeof(ulongest);
+    size_t bufSize = bufCapTable[nrow]*sizeof(KeyLoc);
+    size_t bitSize = bitCapTable[nrow]*sizeof(ulongest);
     
     void* raw = tazE_zallocRaw( eng, &rawA, bufSize + bitSize );
     
+    idx->row    = nrow;
     idx->buf    = raw;
     idx->bitmap = raw + bufSize;
     
@@ -470,22 +482,18 @@ static void growIdx( tazE_Engine* eng, tazR_Idx* idx ) {
     idx->insert = insertWhenNoStrings;
     idx->scan   = scanWhenNoStrings;
     
-    unsigned ocap = bufCapTable[orow];
-    unsigned oloc = idx->loc;
+    unsigned ocap = bufCapTable[old->row];
     for( unsigned i = 0 ; i < ocap ; i++ ) {
-        if( tazR_getValType( obuf[i].key ) == tazR_Type_NONE )
+        if( tazR_getValType( old->buf[i].key ) == tazR_Type_NONE )
             continue;
         
-        idx->loc = obuf[i].loc;
-        idx->insert( eng, idx, obuf[i].key );
+        idx->loc = old->buf[i].loc;
+        idx->insert( eng, idx, old->buf[i].key );
     }
-    idx->loc = oloc;
+    idx->loc = old->loc;
     
     tazE_commitRaw( eng, &rawA );
-    
-    size_t oBufSize = bufCapTable[orow]*sizeof(KeyLoc);
-    size_t oBitSize = bitCapTable[orow]*sizeof(ulongest);
-    tazE_freeRaw( eng, obuf, oBufSize + oBitSize );
+    tazE_remBucket( eng, &buc );
 }
 
 
@@ -505,6 +513,24 @@ long tazR_idxLookup( tazE_Engine* eng, tazR_Idx* idx, tazR_TVal key ) {
 
 unsigned tazR_idxNumKeys( tazE_Engine* eng, tazR_Idx* idx ) {
     return idx->loc;
+}
+
+tazR_TVal tazR_idxGetKey( tazE_Engine* eng, tazR_Idx* idx, unsigned loc ) {
+    unsigned const bitCap = bitCapTable[idx->row];
+    for( unsigned j = 0 ; j < bitCap ; j++ ) {
+        unsigned k = 0;
+        ulongest u = idx->bitmap[j];
+        while( u ) {
+            if( (u & 0xF) != 0 ) {
+                unsigned i = j*sizeof(ulongest) + k;
+                if( idx->buf[i].loc == loc )
+                    return idx->buf[i].key;
+            }
+            k++;
+            u >>= 8;
+        }
+    }
+    return tazR_udf;
 }
 
 tazR_Idx* tazR_subIdx( tazE_Engine* eng, tazR_Idx* idx, unsigned n, bool* select, long* locs ) {

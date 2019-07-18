@@ -26,7 +26,6 @@ typedef enum   tazE_EventType tazE_EventType;
 
 struct tazE_Engine {
     tazR_State* environment;
-    tazR_State* formatter;
     tazR_State* interface;
 
     tazR_TVal errvalBadAlloc;
@@ -39,6 +38,7 @@ struct tazE_Engine {
     tazR_TVal errvalMultipleEllipsis;
     tazR_TVal errvalSetFromUdf;
     tazR_TVal errvalSetToUdf;
+    tazR_TVal errvalInvalidFormatSpec;
 };
 
 tazE_Engine* tazE_makeEngine( taz_Config const* cfg );
@@ -234,7 +234,7 @@ void     tazE_stealStr( tazE_Engine* eng, taz_StrLoan* loan );
 unsigned tazE_strHash( tazE_Engine* eng, tazR_Str str );
 bool     tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
 
-#define tazE_strIsLong( ENG, STR ) (((STR) & (0x3LLU << 46)) == 0)
-#define tazE_strIsGCed( ENG, STR ) (((STR) & (0x3LLU << 46)) < 2)
+#define tazE_strIsLong( ENG, STR ) (((STR) >> 46) == 2)
+#define tazE_strIsGCed( ENG, STR ) (((STR) >> 46) != 0)
 
 #endif

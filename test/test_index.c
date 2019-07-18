@@ -90,6 +90,7 @@ begin_test( index_insert_and_lookup, SETUP_ENGINE_AND_BARRIER )
         long     lookupLoc = tazR_idxLookup( eng, idx, buc.key );
         check( lookupLoc >= 0 );
         check( lookupLoc == insertLoc );
+        check( tazR_valEqual( tazR_idxGetKey( eng, idx, insertLoc ), buc.key ) );
     }
     
     tazE_remBucket( eng, &buc );

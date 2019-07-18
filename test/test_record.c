@@ -33,10 +33,6 @@ static void* alloc( void* old, size_t osz, size_t nsz ) {
     tazE_popBarrier( eng, &bar );                                           \
     tazE_freeEngine( eng );
 
-static void foo( taz_Interface* taz, taz_Call* call ) {
-    // NADA
-}
-
 begin_test( create_record, SETUP_ENGINE_AND_BARRIER )
     struct {
         tazE_Bucket base;
@@ -104,7 +100,7 @@ begin_test( record_fields, SETUP_ENGINE_AND_BARRIER )
         tazR_TVal   val1;
         tazR_TVal   val2;
     } buc;
-    tazE_addBucket( eng, &buc, 2 );
+    tazE_addBucket( eng, &buc, 5 );
 
     tazR_Idx* idx = tazR_makeIdx( eng );
     buc.idx = tazR_idxVal( idx );
@@ -161,10 +157,59 @@ begin_test( record_iteration, SETUP_ENGINE_AND_BARRIER )
 end_test( record_iteration, TEARDOWN_ENGINE_AND_BARRIER )
 
 
+
+begin_test( fail_on_set_from_udf, SETUP_ENGINE_AND_BARRIER )
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   idx;
+        tazR_TVal   rec;
+        tazR_TVal   iter;
+    } buc;
+    tazE_addBucket( eng, &buc, 2 );
+
+    tazR_Idx* idx = tazR_makeIdx( eng );
+    buc.idx = tazR_idxVal( idx );
+
+    tazR_Rec* rec = tazR_makeRec( eng, idx );
+    buc.rec = tazR_recVal( rec );
+
+    tazR_recDef( eng, rec, tazR_intVal( 123 ), tazR_intVal( 321 ) );
+
+    if( setjmp( bar.errorDst ) ) {
+        pass();
+    }
+    tazR_recSet( eng, rec, tazR_intVal( 123 ), tazR_udf );
+    fail();
+end_test( fail_on_set_from_udf, TEARDOWN_ENGINE )
+
+begin_test( fail_on_set_to_udf, SETUP_ENGINE_AND_BARRIER )
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   idx;
+        tazR_TVal   rec;
+        tazR_TVal   iter;
+    } buc;
+    tazE_addBucket( eng, &buc, 2 );
+
+    tazR_Idx* idx = tazR_makeIdx( eng );
+    buc.idx = tazR_idxVal( idx );
+
+    tazR_Rec* rec = tazR_makeRec( eng, idx );
+    buc.rec = tazR_recVal( rec );
+
+    if( setjmp( bar.errorDst ) ) {
+        pass();
+    }
+    tazR_recSet( eng, rec, tazR_intVal( 123 ), tazR_intVal( 321 ) );
+    fail();
+end_test( fail_on_set_to_udf, TEARDOWN_ENGINE )
+
 begin_suite( record_tests )
     with_test( create_record )
     with_test( record_fields )
     with_test( record_iteration )
+    with_test( fail_on_set_from_udf )
+    with_test( fail_on_set_to_udf )
 end_suite( record_tests )
 
 int main( void ) {

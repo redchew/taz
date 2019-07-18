@@ -39,6 +39,7 @@ enum taz_ErrNum {
     taz_ErrNum_FATAL,
     taz_ErrNum_PANIC,
     taz_ErrNum_COMPILE,
+    taz_ErrNum_FORMAT,
     taz_ErrNum_OTHER
 };
 

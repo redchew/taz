@@ -286,11 +286,10 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     tazE_markVal( &eng->view, eng->view.errvalMultipleEllipsis );
     tazE_markVal( &eng->view, eng->view.errvalSetFromUdf );
     tazE_markVal( &eng->view, eng->view.errvalSetToUdf );
+    tazE_markVal( &eng->view, eng->view.errvalInvalidFormatSpec );
 
     if( eng->view.environment )
         tazE_markObj( (tazE_Engine*)eng, eng->view.environment );
-    if( eng->view.formatter )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.formatter );
     if( eng->view.interface )
         tazE_markObj( (tazE_Engine*)eng, eng->view.interface );
     
@@ -477,9 +476,9 @@ meta bits should be cleared.
 #define STR_SIZE_MASK  (0x3FLLU << 40)
 #define STR_SIZE_SHIFT (40)
 #define STR_TYPE_MASK  (0x3LLU << 46)
-#define STR_SHORT      (0x2LLU << 46)
+#define STR_SHORT      (0x0LLU << 46)
 #define STR_MEDIUM     (0x1LLU << 46)
-#define STR_LONG       (0x0LLU << 46)
+#define STR_LONG       (0x2LLU << 46)
 
 #define SHORT_STR_MAX_LEN  (5)
 #define MEDIUM_STR_MAX_LEN (16)
@@ -717,7 +716,6 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     EngineFull* eng   = alloc( NULL, 0, sizeof(EngineFull) );
     
     eng->view.environment  = NULL;
-    eng->view.formatter    = NULL;
     eng->view.interface    = NULL;
     eng->alloc         = alloc;
     eng->barriers      = NULL;
@@ -759,6 +757,7 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     ERRVAL( MultipleEllipsis, "Multiple ellipsis given in parameter or variable list" );
     ERRVAL( SetFromUdf, "Attempt to set record field or variable from `udf` value" );
     ERRVAL( SetToUdf, "Attempt to set undefined variable or record field" );
+    ERRVAL( InvalidFormatSpec, "Invalid format specifier" );
 
     tazE_popBarrier( (tazE_Engine*)eng, &bar );
     eng->gcDisabled = false;
