@@ -2,14 +2,15 @@ CC      ?= gcc
 CCFLAGS := -g -Wall -std=c99 -Wno-unused $(CFLAGS) #-fsanitize=address -fsanitize=undefined -fsanitize=leak
 CCLIBS  := -l m
 
-run: build
+test: build
 	@ ./build/test_engine
 	@ ./build/test_index
 	@ ./build/test_code
 	@ ./build/test_record
 	@ ./build/test_formatter
+	@ ./build/test_environment
 
-build: build/test_engine build/test_index build/test_code build/test_record build/test_formatter
+build: build/test_engine build/test_index build/test_code build/test_record build/test_formatter build/test_environment
 
 clean:
 	- @ rm -r build/
@@ -33,3 +34,7 @@ build/test_record: test_record.c ../taz_engine.h ../taz_engine.c ../taz_index.h 
 build/test_formatter: test_formatter.c ../taz_engine.h ../taz_engine.c ../taz_index.h ../taz_index.c  ../taz_record.h ../taz_record.c ../taz_formatter.h ../taz_formatter.c
 	@ mkdir -p build/
 	@ $(CC) $(CCFLAGS) test_formatter.c $(CCLIBS) -o build/test_formatter
+
+build/test_environment: test_environment.c ../taz_engine.h ../taz_engine.c ../taz_index.h ../taz_index.c  ../taz_record.h ../taz_record.c ../taz_environment.h ../taz_environment.c
+	@ mkdir -p build/
+	@ $(CC) $(CCFLAGS) test_environment.c $(CCLIBS) -o build/test_environment

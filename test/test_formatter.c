@@ -142,15 +142,15 @@ begin_test( format_records, SETUP_ENGINE_AND_BARRIER )
 
 end_test( format_records, TEARDOWN_ENGINE_AND_BARRIER )
 
-begin_suite( record_tests )
+begin_suite( formatter_tests )
     with_test( format_atomic )
     with_test( alt_base_numbers )
     with_test( format_strings )
     with_test( format_records )
-end_suite( record_tests )
+end_suite( formatter_tests )
 
 int main( void ) {
-    if( run_suite( record_tests ) ) {
+    if( run_suite( formatter_tests ) ) {
         printf( "PASSED\n" );
         return 0;
     }

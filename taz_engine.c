@@ -287,11 +287,12 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     tazE_markVal( &eng->view, eng->view.errvalSetFromUdf );
     tazE_markVal( &eng->view, eng->view.errvalSetToUdf );
     tazE_markVal( &eng->view, eng->view.errvalInvalidFormatSpec );
+    tazE_markVal( &eng->view, eng->view.errvalCyclicRecordComparison );
 
-    if( eng->view.environment )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.environment );
-    if( eng->view.interface )
-        tazE_markObj( (tazE_Engine*)eng, eng->view.interface );
+    if( eng->view.envState )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.envState );
+    if( eng->view.apiState )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.apiState );
     
     tazE_Barrier* barIt = eng->barriers;
     while( barIt ) {
@@ -715,8 +716,8 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     taz_MemCb   alloc = cfg->alloc;
     EngineFull* eng   = alloc( NULL, 0, sizeof(EngineFull) );
     
-    eng->view.environment  = NULL;
-    eng->view.interface    = NULL;
+    eng->view.envState = NULL;
+    eng->view.apiState = NULL;
     eng->alloc         = alloc;
     eng->barriers      = NULL;
     eng->objects       = NULL;
@@ -758,6 +759,7 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     ERRVAL( SetFromUdf, "Attempt to set record field or variable from `udf` value" );
     ERRVAL( SetToUdf, "Attempt to set undefined variable or record field" );
     ERRVAL( InvalidFormatSpec, "Invalid format specifier" );
+    ERRVAL( CyclicRecordComparison, "Illegal cyclic record comparison" );
 
     tazE_popBarrier( (tazE_Engine*)eng, &bar );
     eng->gcDisabled = false;
@@ -1106,17 +1108,17 @@ bool tazE_strLess( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
     return less;
 }
 
-bool tazE_strMore( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
+bool tazE_strLessOrEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
     StrPool* pool = ((EngineFull*)eng)->strPool;
     
     taz_StrLoan sl1; tazE_borrowStr( eng, str1, &sl1 );
     taz_StrLoan sl2; tazE_borrowStr( eng, str2, &sl2 );
 
     bool less;
-    if( sl2.len < sl1.len )
-        less = memcmp( sl1.str, sl2.str, sl2.len ) >= 0;
+    if( sl1.len <= sl2.len )
+        less = memcmp( sl1.str, sl2.str, sl1.len ) <= 0;
     else
-        less = memcmp( sl1.str, sl2.str, sl1.len ) > 0;
+        less = memcmp( sl1.str, sl2.str, sl2.len ) < 0;
     
     tazE_returnStr( eng, &sl1 );
     tazE_returnStr( eng, &sl2 );

@@ -15,10 +15,13 @@ as far as memory goes, record instances.
 
 The combined `index_and_flags` field houses both a pointer to the
 record's index, and 16 bits of flag bits; of which only the lowest
-bit is used.  This bit (masked by `SEP_FLAG_MASK`) indicates that the
+2 bits are used.  The bit masked by `SEP_FLAG_MASK` indicates that the
 record has been marked for 'separation' from its index; so its
 current index pointer will be replaced with a new index when the
-next definition to the record is requested.
+next definition to the record is requested.  The `RCU_FLAG_MASK` is
+used as a marker for cycle detection when comparing records or doing
+other recursive operations.
+
 
 The combined `vals_and_row` field houses a pointer to the value
 array, as well as the array's size as a `row` into the `valsCapTable`
@@ -26,6 +29,7 @@ array, as well as the array's size as a `row` into the `valsCapTable`
 struct tazR_Rec {
     tazR_TPtr index_and_flags;
     #define SEP_FLAG_MASK (0x1)
+    #define RCU_FLAG_MASK (0x2)
 
     tazR_TPtr vals_and_row;
 };
@@ -259,4 +263,105 @@ bool tazR_recIterNext( tazE_Engine* eng, tazR_RecIter* iter, tazR_TVal* key, taz
     }
     *val = vals[loc];
     return true;
+}
+
+unsigned tazR_recCount( tazE_Engine* eng, tazR_Rec* rec ) {
+    unsigned   cap  = valsCapTable[ tazR_getPtrTag( rec->vals_and_row ) ];
+    tazR_TVal* vals = tazR_getPtrAddr( rec->vals_and_row );
+    
+    unsigned count = 0;
+    for( unsigned i = 0 ; i < cap ; i++ ) {
+        if( tazR_getValType( vals[i] ) != tazR_Type_UDF )
+            count++;
+    }
+
+    return count;
+}
+
+static bool areEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2, bool* cyclic );
+
+static bool isSubset( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2, bool* cyclic ) {
+    unsigned tag = tazR_getPtrTag( rec1->index_and_flags );
+    if( tag & RCU_FLAG_MASK ) {
+        *cyclic = true;
+        return false;
+    }
+    
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   iter;
+    } buc;
+    tazE_addBucket( eng, &buc, 1 );
+    
+
+    tazR_RecIter* iter = tazR_makeRecIter( eng, rec1 );
+    buc.iter = tazR_stateVal( (tazR_State*)iter );
+
+    bool isSub = true;
+
+    tazR_TVal key, val;
+    while( tazR_recIterNext( eng, iter, &key, &val ) ) {
+        tazR_TVal oth = tazR_recGet( eng, rec2, key );
+
+        tazR_Type type = tazR_getValType( oth );
+        if( type != tazR_getValType( val ) ) {
+            isSub = false;
+            break;
+        }
+        if( type == tazR_Type_STR ) {
+            if( !tazE_strEqual( eng, tazR_getValStr( val ), tazR_getValStr( oth ) ) ) {
+                isSub = false;
+                break;
+            }
+        }
+        else
+        if( !tazR_valEqual( val, oth ) ) {
+            if( type == tazR_Type_REC ) {
+                
+                rec1->index_and_flags = tazR_makeTPtr( tag | RCU_FLAG_MASK, tazR_getPtrAddr( rec1->index_and_flags ) );
+                isSub = areEqual( eng, tazR_getValRec( val ), tazR_getValRec( oth ), cyclic );
+                rec1->index_and_flags = tazR_makeTPtr( tag & !RCU_FLAG_MASK, tazR_getPtrAddr( rec1->index_and_flags ) );
+                if( !isSub )
+                    break;
+            }
+        }
+    }
+
+    tazE_remBucket( eng, &buc );
+    return isSub;
+}
+
+static bool areEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2, bool* cyclic ) {
+    bool isSub = isSubset( eng, rec1, rec2, cyclic );
+    if( *cyclic )
+        return false;
+    
+    return isSub && tazR_recCount( eng, rec1 ) == tazR_recCount( eng, rec2 );
+}
+
+bool tazR_recEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
+    bool cyclic = false;
+    bool equal  = areEqual( eng, rec1, rec2, &cyclic );
+    if( cyclic )
+        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+    
+    return equal;
+}
+
+bool tazR_recLess( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
+    bool cyclic = false;
+    bool subset = isSubset( eng, rec1, rec2, &cyclic );
+    if( cyclic )
+        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+    
+    return subset && tazR_recCount( eng, rec1 ) < tazR_recCount( eng, rec2 );
+}
+
+bool tazR_recLessOrEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
+    bool cyclic = false;
+    bool subset = isSubset( eng, rec1, rec2, &cyclic );
+    if( cyclic )
+        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+    
+    return subset && tazR_recCount( eng, rec1 ) <= tazR_recCount( eng, rec2 );
 }

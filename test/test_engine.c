@@ -18,8 +18,8 @@ static void* alloc( void* old, size_t osz, size_t nsz ) {
     tazE_freeEngine( eng );
 
 begin_test( make_and_free_engine, SETUP_ENGINE )
-    check( eng->environment == NULL );
-    check( eng->interface == NULL );
+    check( eng->envState == NULL );
+    check( eng->apiState == NULL );
 end_test( make_and_free_engine, TEARDOWN_ENGINE )
 
 
@@ -242,29 +242,30 @@ begin_test( string_comparison, SETUP_ENGINE_AND_BARRIER )
         tazR_Str    shortStr1 = tazE_makeStr( eng, shortRnd, strlen( shortRnd ) );
         tazR_Str    shortStr2 = tazE_makeStr( eng, shortRnd, strlen( shortRnd ) );
         check( tazE_strEqual( eng, shortStr1, shortStr2 ) );
+        check( tazE_strLessOrEqual( eng, shortStr1, shortStr2 ) );
         
         char const* mediumRnd  = randMediumStr();
         tazR_Str    mediumStr1 = tazE_makeStr( eng, mediumRnd, strlen( mediumRnd ) );
         tazR_Str    mediumStr2 = tazE_makeStr( eng, mediumRnd, strlen( mediumRnd ) );
         check( tazE_strEqual( eng, mediumStr1, mediumStr2 ) );
+        check( tazE_strLessOrEqual( eng, mediumStr1, mediumStr2 ) );
         
         char const* longRnd  = randShortStr();
         tazR_Str    longStr1 = tazE_makeStr( eng, longRnd, strlen( longRnd ) );
         tazR_Str    longStr2 = tazE_makeStr( eng, longRnd, strlen( longRnd ) );
         check( tazE_strEqual( eng, longStr1, longStr2 ) );
+        check( tazE_strLessOrEqual( eng, longStr1, longStr2 ) );
     }
     for( unsigned i = 0 ; i < 1000 ; i++ ) {
         char const* rnd  = randShortStr();
         tazR_Str    str1 = tazE_makeStr( eng, rnd, strlen( rnd ) );
         tazR_Str    str2 = tazE_makeStr( eng, rnd, strlen( rnd )/2 );
         check( tazE_strLess( eng, str2, str1 ) );
-        check( tazE_strMore( eng, str1, str2 ) );
     }
 
     tazR_Str str1 = tazE_makeStr( eng, "abc", 3 );
     tazR_Str str2 = tazE_makeStr( eng, "cba", 3 );
     check( tazE_strLess( eng, str1, str2 ) );
-    check( tazE_strMore( eng, str2, str1 ) );
 
 end_test( string_comparison, TEARDOWN_ENGINE_AND_BARRIER )
 

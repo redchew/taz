@@ -13,6 +13,11 @@ void      tazR_recSep( tazE_Engine* eng, tazR_Rec* rec );
 tazR_RecIter* tazR_makeRecIter( tazE_Engine* eng, tazR_Rec* rec );
 bool          tazR_recIterNext( tazE_Engine* eng, tazR_RecIter* iter, tazR_TVal* key, tazR_TVal* val );
 
+unsigned   tazR_recCount( tazE_Engine* eng, tazR_Rec* rec );
+bool       tazR_recEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 );
+bool       tazR_recLess( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 );
+bool       tazR_recLessOrEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 );
+
 #define tazR_scanRec _tazR_scanRec
 void _tazR_scanRec( tazE_Engine* eng, tazR_Rec* rec, bool full );
 

@@ -25,8 +25,8 @@ typedef struct tazE_Listener  tazE_Listener;
 typedef enum   tazE_EventType tazE_EventType;
 
 struct tazE_Engine {
-    tazR_State* environment;
-    tazR_State* interface;
+    tazR_State* envState;
+    tazR_State* apiState;
 
     tazR_TVal errvalBadAlloc;
     tazR_TVal errvalBadKey;
@@ -39,6 +39,7 @@ struct tazE_Engine {
     tazR_TVal errvalSetFromUdf;
     tazR_TVal errvalSetToUdf;
     tazR_TVal errvalInvalidFormatSpec;
+    tazR_TVal errvalCyclicRecordComparison;
 };
 
 tazE_Engine* tazE_makeEngine( taz_Config const* cfg );
@@ -234,7 +235,7 @@ void     tazE_stealStr( tazE_Engine* eng, taz_StrLoan* loan );
 unsigned tazE_strHash( tazE_Engine* eng, tazR_Str str );
 bool     tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
 bool     tazE_strLess( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
-bool     tazE_strMore( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
+bool     tazE_strLessOrEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
 
 #define tazE_strIsLong( ENG, STR ) (((STR) >> 46) == 2)
 #define tazE_strIsGCed( ENG, STR ) (((STR) >> 46) != 0)

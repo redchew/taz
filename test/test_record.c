@@ -131,7 +131,7 @@ begin_test( record_iteration, SETUP_ENGINE_AND_BARRIER )
         tazR_TVal   rec;
         tazR_TVal   iter;
     } buc;
-    tazE_addBucket( eng, &buc, 2 );
+    tazE_addBucket( eng, &buc, 3 );
 
     tazR_Idx* idx = tazR_makeIdx( eng );
     buc.idx = tazR_idxVal( idx );
@@ -165,7 +165,7 @@ begin_test( fail_on_set_from_udf, SETUP_ENGINE_AND_BARRIER )
         tazR_TVal   rec;
         tazR_TVal   iter;
     } buc;
-    tazE_addBucket( eng, &buc, 2 );
+    tazE_addBucket( eng, &buc, 3 );
 
     tazR_Idx* idx = tazR_makeIdx( eng );
     buc.idx = tazR_idxVal( idx );
@@ -189,7 +189,7 @@ begin_test( fail_on_set_to_udf, SETUP_ENGINE_AND_BARRIER )
         tazR_TVal   rec;
         tazR_TVal   iter;
     } buc;
-    tazE_addBucket( eng, &buc, 2 );
+    tazE_addBucket( eng, &buc, 3 );
 
     tazR_Idx* idx = tazR_makeIdx( eng );
     buc.idx = tazR_idxVal( idx );
@@ -204,12 +204,74 @@ begin_test( fail_on_set_to_udf, SETUP_ENGINE_AND_BARRIER )
     fail();
 end_test( fail_on_set_to_udf, TEARDOWN_ENGINE )
 
+begin_test( record_comparison, SETUP_ENGINE_AND_BARRIER )
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   idx;
+        tazR_TVal   rec1;
+        tazR_TVal   rec2;
+        tazR_TVal   child1;
+        tazR_TVal   child2;
+    } buc;
+    tazE_addBucket( eng, &buc, 5 );
+
+    tazR_Idx* idx = tazR_makeIdx( eng );
+    buc.idx = tazR_idxVal( idx );
+
+    tazR_Rec* rec1 = tazR_makeRec( eng, idx );
+    buc.rec1 = tazR_recVal( rec1 );
+
+    tazR_Rec* child1 = tazR_makeRec( eng, idx );
+    buc.child1 = tazR_recVal( child1 );
+
+    tazR_Rec* rec2 = tazR_makeRec( eng, idx );
+    buc.rec2 = tazR_recVal( rec2 );
+
+    tazR_Rec* child2 = tazR_makeRec( eng, idx );
+    buc.child2 = tazR_recVal( child2 );
+
+    check( tazR_recEqual( eng, rec1, rec2 ) );
+    check( !tazR_recLess( eng, rec1, rec2 ) );
+    check( tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+    tazR_recDef( eng, rec2, tazR_intVal( 0 ), tazR_intVal( 123 ) );
+
+    check( !tazR_recEqual( eng, rec1, rec2 ) );
+    check( tazR_recLess( eng, rec1, rec2 ) );
+    check( tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+    tazR_recDef( eng, rec1, tazR_intVal( 0 ), tazR_intVal( 123 ) );
+    check( tazR_recEqual( eng, rec1, rec2 ) );
+    check( !tazR_recLess( eng, rec1, rec2 ) );
+    check( tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+
+    tazR_recDef( eng, rec1, tazR_intVal( 1 ), buc.child1 );
+    tazR_recDef( eng, rec2, tazR_intVal( 1 ), buc.child2 );
+    check( tazR_recEqual( eng, rec1, rec2 ) );
+    check( !tazR_recLess( eng, rec1, rec2 ) );
+    check( tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+    tazR_recDef( eng, child1, tazR_intVal( 0 ), tazR_intVal( 321 ) );
+    check( !tazR_recEqual( eng, rec1, rec2 ) );
+    check( !tazR_recLess( eng, rec1, rec2 ) );
+    check( !tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+    tazR_recDef( eng, child2, tazR_intVal( 0 ), tazR_intVal( 321 ) );
+    check( tazR_recEqual( eng, rec1, rec2 ) );
+    check( !tazR_recLess( eng, rec1, rec2 ) );
+    check( tazR_recLessOrEqual( eng, rec1, rec2 ) );
+
+    tazE_remBucket( eng, &buc );
+end_test( record_comparison, TEARDOWN_ENGINE )
+
 begin_suite( record_tests )
     with_test( create_record )
     with_test( record_fields )
     with_test( record_iteration )
     with_test( fail_on_set_from_udf )
     with_test( fail_on_set_to_udf )
+    with_test( record_comparison )
 end_suite( record_tests )
 
 int main( void ) {
