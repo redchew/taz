@@ -1087,3 +1087,39 @@ bool tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
     
     return !memcmp( node1->buf, node2->buf, node1->len );
 }
+
+bool tazE_strLess( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
+    StrPool* pool = ((EngineFull*)eng)->strPool;
+    
+    taz_StrLoan sl1; tazE_borrowStr( eng, str1, &sl1 );
+    taz_StrLoan sl2; tazE_borrowStr( eng, str2, &sl2 );
+
+    bool less;
+    if( sl1.len < sl2.len )
+        less = memcmp( sl1.str, sl2.str, sl1.len ) <= 0;
+    else
+        less = memcmp( sl1.str, sl2.str, sl2.len ) < 0;
+    
+    tazE_returnStr( eng, &sl1 );
+    tazE_returnStr( eng, &sl2 );
+
+    return less;
+}
+
+bool tazE_strMore( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 ) {
+    StrPool* pool = ((EngineFull*)eng)->strPool;
+    
+    taz_StrLoan sl1; tazE_borrowStr( eng, str1, &sl1 );
+    taz_StrLoan sl2; tazE_borrowStr( eng, str2, &sl2 );
+
+    bool less;
+    if( sl2.len < sl1.len )
+        less = memcmp( sl1.str, sl2.str, sl2.len ) >= 0;
+    else
+        less = memcmp( sl1.str, sl2.str, sl1.len ) > 0;
+    
+    tazE_returnStr( eng, &sl1 );
+    tazE_returnStr( eng, &sl2 );
+
+    return less;
+}

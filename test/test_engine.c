@@ -236,7 +236,7 @@ begin_test( short_strings, SETUP_ENGINE_AND_BARRIER )
     tazE_collect( eng, true );
 end_test( medium_strings, TEARDOWN_ENGINE_AND_BARRIER )
 
-begin_test( string_equality, SETUP_ENGINE_AND_BARRIER )
+begin_test( string_comparison, SETUP_ENGINE_AND_BARRIER )
     for( unsigned i = 0 ; i < 1000 ; i++ ) {
         char const* shortRnd  = randShortStr();
         tazR_Str    shortStr1 = tazE_makeStr( eng, shortRnd, strlen( shortRnd ) );
@@ -253,7 +253,20 @@ begin_test( string_equality, SETUP_ENGINE_AND_BARRIER )
         tazR_Str    longStr2 = tazE_makeStr( eng, longRnd, strlen( longRnd ) );
         check( tazE_strEqual( eng, longStr1, longStr2 ) );
     }
-end_test( string_equality, TEARDOWN_ENGINE_AND_BARRIER )
+    for( unsigned i = 0 ; i < 1000 ; i++ ) {
+        char const* rnd  = randShortStr();
+        tazR_Str    str1 = tazE_makeStr( eng, rnd, strlen( rnd ) );
+        tazR_Str    str2 = tazE_makeStr( eng, rnd, strlen( rnd )/2 );
+        check( tazE_strLess( eng, str2, str1 ) );
+        check( tazE_strMore( eng, str1, str2 ) );
+    }
+
+    tazR_Str str1 = tazE_makeStr( eng, "abc", 3 );
+    tazR_Str str2 = tazE_makeStr( eng, "cba", 3 );
+    check( tazE_strLess( eng, str1, str2 ) );
+    check( tazE_strMore( eng, str2, str1 ) );
+
+end_test( string_comparison, TEARDOWN_ENGINE_AND_BARRIER )
 
 begin_suite( engine_tests )
     with_test( make_and_free_engine )
@@ -265,7 +278,7 @@ begin_suite( engine_tests )
     with_test( long_strings );
     with_test( medium_strings );
     with_test( short_strings );
-    with_test( string_equality );
+    with_test( string_comparison );
 end_suite( engine_tests )
 
 int main( void ) {

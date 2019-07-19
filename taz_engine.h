@@ -233,6 +233,8 @@ void     tazE_returnStr( tazE_Engine* eng, taz_StrLoan* loan );
 void     tazE_stealStr( tazE_Engine* eng, taz_StrLoan* loan );
 unsigned tazE_strHash( tazE_Engine* eng, tazR_Str str );
 bool     tazE_strEqual( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
+bool     tazE_strLess( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
+bool     tazE_strMore( tazE_Engine* eng, tazR_Str str1, tazR_Str str2 );
 
 #define tazE_strIsLong( ENG, STR ) (((STR) >> 46) == 2)
 #define tazE_strIsGCed( ENG, STR ) (((STR) >> 46) != 0)

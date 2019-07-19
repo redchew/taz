@@ -3,11 +3,11 @@ CCFLAGS := -g -Wall -std=c99 -Wno-unused $(CFLAGS) #-fsanitize=address -fsanitiz
 CCLIBS  := -l m
 
 run: build
-	 @ ./build/test_engine
-	 @ ./build/test_index
-	 @ ./build/test_code
-	 @ ./build/test_record
-	 @ ./build/test_formatter
+	@ ./build/test_engine
+	@ ./build/test_index
+	@ ./build/test_code
+	@ ./build/test_record
+	@ ./build/test_formatter
 
 build: build/test_engine build/test_index build/test_code build/test_record build/test_formatter
 
