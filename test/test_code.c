@@ -1,6 +1,8 @@
 #define taz_TESTING
 #include "../taz_index.c"
 #include "../taz_code.c"
+#include "../taz_record.c"
+#include "../taz_environment.c"
 #include "../taz_engine.c"
 #include "test.h"
 #include <string.h>

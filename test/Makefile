@@ -23,7 +23,7 @@ build/test_index: test_index.c ../taz_engine.h ../taz_engine.c ../taz_index.h ..
 	@ mkdir -p build/
 	@ $(CC) $(CCFLAGS) test_index.c $(CCLIBS) -o build/test_index
 
-build/test_code: test_code.c ../taz_engine.h ../taz_engine.c ../taz_index.h ../taz_index.c  ../taz_code.h ../taz_code.c
+build/test_code: test_code.c ../taz_engine.h ../taz_engine.c ../taz_index.h ../taz_index.c  ../taz_code.h ../taz_code.c ../taz_record.h ../taz_record.c ../taz_environment.h ../taz_environment.c
 	@ mkdir -p build/
 	@ $(CC) $(CCFLAGS) test_code.c $(CCLIBS) -o build/test_code
 

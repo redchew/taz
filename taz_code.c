@@ -1,6 +1,7 @@
 #include "taz_code.h"
 #include "taz_engine.h"
 #include "taz_index.h"
+#include "taz_environment.h"
 
 #include <string.h>
 #include <ctype.h>
@@ -155,21 +156,20 @@ static tazR_Ref addUpval( tazC_Assembler* _as, tazR_Str name ) {
 static tazR_Ref addLocal( tazC_Assembler* _as, tazR_Str name ) {
     BCAssembler* as = (BCAssembler*)_as;
 
-    tazR_Ref ref;
-    if( as->scope == taz_Scope_GLOBAL ) {
-        // TODO
-        assert( false );
-        ref.flat = 0;
-    }
-    else {
-        unsigned loc = tazR_idxInsert( as->eng, as->localIdx, tazR_strVal( name ) );
-        ref.bits.type  = tazR_RefType_LOCAL;
-        ref.bits.which = loc;
-        if( loc > ref.bits.which )
-            tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
-        
-        as->numLocals++;
-    }
+    unsigned loc;
+    if( as->scope == taz_Scope_GLOBAL )
+        loc = tazR_getGlobalLoc( as->eng, name );
+    else
+        loc = tazR_idxInsert( as->eng, as->localIdx, tazR_strVal( name ) );
+
+    tazR_Ref ref = { .bits = {
+        .type  = tazR_RefType_LOCAL,
+        .which = loc
+    }};
+    if( loc > ref.bits.which )
+        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
+    
+    as->numLocals++;
 
     return ref;
 }
