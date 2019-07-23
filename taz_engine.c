@@ -21,6 +21,7 @@ struct EngineFull {
     tazE_Barrier*  barriers;
     tazR_Obj*      objects;
     taz_StrLoan*   loans;
+    tazR_TVal      errvals[taz_ErrNum_LAST];
     
     bool isGCRunning;
     bool isFullCycle;
@@ -56,7 +57,7 @@ static void* reallocMem( EngineFull* eng, void* old, size_t osz, size_t nsz ) {
     if( !mem && nsz > 0 ) {
         collect( eng, nsz, false );
         if( !mem )
-            tazE_error( (tazE_Engine*)eng, taz_ErrNum_FATAL, eng->view.errvalBadAlloc );
+            tazE_error( (tazE_Engine*)eng, taz_ErrNum_MEMORY );
     }
     
     eng->memUsed -= osz;
@@ -278,18 +279,8 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     }
     
     // Scan.
-    tazE_markVal( &eng->view, eng->view.errvalBadAlloc );
-    tazE_markVal( &eng->view, eng->view.errvalBadKey );
-    tazE_markVal( &eng->view, eng->view.errvalTooManyLocals );
-    tazE_markVal( &eng->view, eng->view.errvalTooManyUpvals );
-    tazE_markVal( &eng->view, eng->view.errvalTooManyConsts );
-    tazE_markVal( &eng->view, eng->view.errvalBadParamName );
-    tazE_markVal( &eng->view, eng->view.errvalBadUpvalName );
-    tazE_markVal( &eng->view, eng->view.errvalExtraParamsAfterEllipsis );
-    tazE_markVal( &eng->view, eng->view.errvalSetFromUdf );
-    tazE_markVal( &eng->view, eng->view.errvalSetToUdf );
-    tazE_markVal( &eng->view, eng->view.errvalInvalidFormatSpec );
-    tazE_markVal( &eng->view, eng->view.errvalCyclicRecordComparison );
+    for( unsigned i = 0 ; i < taz_ErrNum_LAST ; i++ )
+        tazE_markVal( &eng->view, eng->errvals[i] );
 
     if( eng->view.envState )
         tazE_markObj( (tazE_Engine*)eng, eng->view.envState );
@@ -751,20 +742,23 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
 
     // These rely on string pool functionality, so must come
     // after the previous segment.
+    for( unsigned i = 0 ; i < taz_ErrNum_LAST ; i++ )
+        eng->errvals[i] = tazR_udf;
+    
     #define ERRVAL( WHICH, STR ) \
-        eng->view.errval ## WHICH = tazR_strVal( tazE_makeStr( &eng->view, STR, sizeof(STR)-1 ) )
-    ERRVAL( BadAlloc, "Memory allocation error" );
-    ERRVAL( BadKey, "Invalid type used for record key" );
-    ERRVAL( TooManyLocals, "Local variable limit exceeded in function" );
-    ERRVAL( TooManyUpvals, "Upvalue limit exceeded in function" );
-    ERRVAL( TooManyConsts, "Constant value limit exceeded in function" );
-    ERRVAL( BadParamName, "Invalid parameter name" );
-    ERRVAL( BadUpvalName, "Invalid upvalue name" );
-    ERRVAL( ExtraParamsAfterEllipsis, "Extra parameters given after ellipsis" );
-    ERRVAL( SetFromUdf, "Attempt to set record field or variable from `udf` value" );
-    ERRVAL( SetToUdf, "Attempt to set undefined variable or record field" );
-    ERRVAL( InvalidFormatSpec, "Invalid format specifier" );
-    ERRVAL( CyclicRecordComparison, "Illegal cyclic record comparison" );
+        eng->errvals[WHICH] = tazR_strVal( tazE_makeStr( &eng->view, STR, sizeof(STR)-1 ) )
+    ERRVAL( taz_ErrNum_MEMORY, "Memory management error" );
+    ERRVAL( taz_ErrNum_KEY_TYPE, "Invalid type used for record key" );
+    ERRVAL( taz_ErrNum_NUM_LOCALS, "Local variable limit exceeded in function" );
+    ERRVAL( taz_ErrNum_NUM_UPVALS, "Upvalue limit exceeded in function" );
+    ERRVAL( taz_ErrNum_NUM_CONSTS, "Constant value limit exceeded in function" );
+    ERRVAL( taz_ErrNum_PARAM_NAME, "Invalid parameter name" );
+    ERRVAL( taz_ErrNum_UPVAL_NAME, "Invalid upvalue name" );
+    ERRVAL( taz_ErrNum_EXTRA_PARAMS, "Extra parameters given after ellipsis" );
+    ERRVAL( taz_ErrNum_SET_TO_UDF, "Attempt to set record field or variable from `udf` value" );
+    ERRVAL( taz_ErrNum_SET_UNDEFINED, "Attempt to set undefined variable or record field" );
+    ERRVAL( taz_ErrNum_FORMAT_SPEC, "Invalid format specifier" );
+    ERRVAL( taz_ErrNum_CYCLIC_RECORD, "Illegal cyclic record operation" );
 
     tazE_popBarrier( (tazE_Engine*)eng, &bar );
     eng->gcDisabled = false;
@@ -980,7 +974,7 @@ void tazE_popBarrier( tazE_Engine* _eng, tazE_Barrier* barrier ) {
     eng->barriers = eng->barriers->prev;
 }
 
-void tazE_error( tazE_Engine* _eng, taz_ErrNum errnum, tazR_TVal errval ) {
+void tazE_error( tazE_Engine* _eng, taz_ErrNum errnum ) {
     EngineFull* eng = (EngineFull*)_eng;
     
     tazE_Barrier* bar = eng->barriers;
@@ -989,8 +983,25 @@ void tazE_error( tazE_Engine* _eng, taz_ErrNum errnum, tazR_TVal errval ) {
     
     clearBarrier( eng, bar );
     
-    assert( errnum != taz_ErrNum_NONE );
+    assert( errnum != taz_ErrNum_NONE && errnum < taz_ErrNum_LAST );
     bar->errnum = errnum;
+    bar->errval = eng->errvals[errnum];
+    
+    if( bar->errorFun )
+        bar->errorFun( _eng, bar );
+    longjmp( bar->errorDst, 1 );
+}
+
+void tazE_panic( tazE_Engine* _eng, tazR_TVal errval ) {
+    EngineFull* eng = (EngineFull*)_eng;
+    
+    tazE_Barrier* bar = eng->barriers;
+    assert( bar );
+    eng->barriers = bar->prev;
+    
+    clearBarrier( eng, bar );
+
+    bar->errnum = taz_ErrNum_PANIC;
     bar->errval = errval;
     
     if( bar->errorFun )

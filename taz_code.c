@@ -134,7 +134,7 @@ static tazR_Ref addConst( tazC_Assembler* _as, tazR_TVal val ) {
     unsigned loc = as->consts.top - 1;
     tazR_Ref ref = { .bits = { .type = tazR_RefType_CONST, .which = loc } };
     if( loc > ref.bits.which )
-        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyConsts );
+        tazE_error( as->eng, taz_ErrNum_NUM_CONSTS );
 
     return ref;
 }
@@ -147,7 +147,7 @@ static tazR_Ref addUpval( tazC_Assembler* _as, tazR_Str name ) {
     ref.bits.type  = tazR_RefType_UPVAL;
     ref.bits.which = loc;
     if( loc > ref.bits.which )
-        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyUpvals );
+        tazE_error( as->eng, taz_ErrNum_NUM_UPVALS );
 
     as->numUpvals++;
     return ref;
@@ -167,7 +167,7 @@ static tazR_Ref addLocal( tazC_Assembler* _as, tazR_Str name ) {
         .which = loc
     }};
     if( loc > ref.bits.which )
-        tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
+        tazE_error( as->eng, taz_ErrNum_NUM_LOCALS );
     
     as->numLocals++;
 
@@ -187,7 +187,7 @@ static tazR_Ref addParam( tazC_Assembler* _as, tazR_Str name, bool var ) {
         ref.bits.type  = tazR_RefType_LOCAL;
         ref.bits.which = loc;
         if( loc > ref.bits.which )
-            tazE_error( as->eng, taz_ErrNum_COMPILE, as->eng->errvalTooManyLocals );
+            tazE_error( as->eng, taz_ErrNum_NUM_LOCALS );
         
         if( var )
             as->hasVarParams = true;
@@ -369,9 +369,9 @@ static void parseParams( tazE_Engine* eng, char const* params, tazR_HostCode* co
         
         size_t j = i;
         if( !isalpha( params[j] ) && params[j] != '_' )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
+            tazE_error( eng, taz_ErrNum_PARAM_NAME );
         if( code->base.hasVarParams )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalExtraParamsAfterEllipsis );
+            tazE_error( eng, taz_ErrNum_EXTRA_PARAMS );
         
         while( isalnum( params[j] ) || params[j] == '_' )
             j++;
@@ -409,7 +409,7 @@ static void parseUpvals( tazE_Engine* eng, char const* upvals, tazR_HostCode* co
         
         size_t j = i;
         if( !isalpha( upvals[j] ) && upvals[j] != '_' )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
+            tazE_error( eng, taz_ErrNum_UPVAL_NAME );
         
         while( isalnum( upvals[j] ) || upvals[j] == '_' )
             j++;

@@ -111,7 +111,7 @@ static void separateRec( tazE_Engine* eng, tazR_Rec* rec ) {
 void tazR_recDef( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key, tazR_TVal val ) {
     tazR_Type keyType = tazR_getValType( key );
     if( keyType == tazR_Type_UDF || keyType >= tazR_Type_FIRST_OBJECT )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadKey );
+        tazE_error( eng, taz_ErrNum_KEY_TYPE );
     
     if( (tazR_getPtrTag( rec->index_and_flags ) & SEP_FLAG_MASK) != 0 )
         separateRec( eng, rec );
@@ -147,10 +147,10 @@ void tazR_recDef( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key, tazR_TVal val 
 void tazR_recSet( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key, tazR_TVal val ) {
     tazR_Type keyType = tazR_getValType( key );
     if( keyType == tazR_Type_UDF || keyType >= tazR_Type_FIRST_OBJECT )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadKey );
+        tazE_error( eng, taz_ErrNum_KEY_TYPE );
     tazR_Type valType = tazR_getValType( val );
     if( valType == tazR_Type_UDF )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalSetFromUdf );
+        tazE_error( eng, taz_ErrNum_SET_TO_UDF );
 
     tazR_Idx*  idx  = tazR_getPtrAddr( rec->index_and_flags );
     unsigned   row  = tazR_getPtrTag( rec->vals_and_row );
@@ -159,7 +159,7 @@ void tazR_recSet( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key, tazR_TVal val 
     
     long loc = tazR_idxLookup( eng, idx, key );
     if( loc < 0 || loc >= cap || tazR_getValType( vals[loc] ) == tazR_Type_UDF )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalSetToUdf );
+        tazE_error( eng, taz_ErrNum_SET_UNDEFINED );
     
     vals[loc] = val;
 }
@@ -167,7 +167,7 @@ void tazR_recSet( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key, tazR_TVal val 
 tazR_TVal tazR_recGet( tazE_Engine* eng, tazR_Rec* rec, tazR_TVal key ) {
     tazR_Type keyType = tazR_getValType( key );
     if( keyType == tazR_Type_UDF || keyType >= tazR_Type_FIRST_OBJECT )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadKey );
+        tazE_error( eng, taz_ErrNum_KEY_TYPE );
 
     tazR_Idx*  idx  = tazR_getPtrAddr( rec->index_and_flags );
     unsigned   row  = tazR_getPtrTag( rec->vals_and_row );
@@ -343,7 +343,7 @@ bool tazR_recEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
     bool cyclic = false;
     bool equal  = areEqual( eng, rec1, rec2, &cyclic );
     if( cyclic )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+        tazE_error( eng, taz_ErrNum_CYCLIC_RECORD );
     
     return equal;
 }
@@ -352,7 +352,7 @@ bool tazR_recLess( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
     bool cyclic = false;
     bool subset = isSubset( eng, rec1, rec2, &cyclic );
     if( cyclic )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+        tazE_error( eng, taz_ErrNum_CYCLIC_RECORD );
     
     return subset && tazR_recCount( eng, rec1 ) < tazR_recCount( eng, rec2 );
 }
@@ -361,7 +361,7 @@ bool tazR_recLessOrEqual( tazE_Engine* eng, tazR_Rec* rec1, tazR_Rec* rec2 ) {
     bool cyclic = false;
     bool subset = isSubset( eng, rec1, rec2, &cyclic );
     if( cyclic )
-        tazE_error( eng, taz_ErrNum_OTHER, eng->errvalCyclicRecordComparison );
+        tazE_error( eng, taz_ErrNum_CYCLIC_RECORD );
     
     return subset && tazR_recCount( eng, rec1 ) <= tazR_recCount( eng, rec2 );
 }

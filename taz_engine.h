@@ -29,19 +29,6 @@ struct tazE_Engine {
     tazR_State* apiState;
 
     tazR_Fib* fiber;
-
-    tazR_TVal errvalBadAlloc;
-    tazR_TVal errvalBadKey;
-    tazR_TVal errvalTooManyLocals;
-    tazR_TVal errvalTooManyUpvals;
-    tazR_TVal errvalTooManyConsts;
-    tazR_TVal errvalBadParamName;
-    tazR_TVal errvalBadUpvalName;
-    tazR_TVal errvalExtraParamsAfterEllipsis;
-    tazR_TVal errvalSetFromUdf;
-    tazR_TVal errvalSetToUdf;
-    tazR_TVal errvalInvalidFormatSpec;
-    tazR_TVal errvalCyclicRecordComparison;
 };
 
 tazE_Engine* tazE_makeEngine( taz_Config const* cfg );
@@ -202,13 +189,14 @@ void tazE_popBarrier( tazE_Engine* eng, tazE_Barrier* barrier );
 
 /* Note: Interrupts
 These next few functions trigger interrupts which are expected to be handled by
-the topmost barrier.  A call to `tazE_error()` will long jump to `errorDst`
-after setting the barrier's `errnum` and `errval` fields from the respective
-arguments.  A call to `tazE_yield()` jumps to `yieldDst`.  In either case the
-engine will drop any references to stack allocated entities linked onto the
-topmost barrier, and will release uncommitted allocations.
+the topmost barrier.  A call to `tazE_error()` and `tazE_panic()` will jump
+to the barrier's `errorDst` after setting its `errnum` and `errval` appropriately.
+A call to `tazE_yield()` jumps to `yieldDst`.  In either case the engine will drop
+any references to stack allocated entities linked onto the topmost barrier, and
+will release uncommitted allocations.
 */
-void tazE_error( tazE_Engine* eng, taz_ErrNum errnum, tazR_TVal errval );
+void tazE_error( tazE_Engine* eng, taz_ErrNum errnum );
+void tazE_panic( tazE_Engine* eng, tazR_TVal errval );
 void tazE_yield( tazE_Engine* eng );
 
 

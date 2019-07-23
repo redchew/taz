@@ -35,8 +35,8 @@ static void* alloc( void* old, size_t osz, size_t nsz ) {
     tazE_popBarrier( eng, &bar );                                           \
     tazE_freeEngine( eng );
 
-static taz_Tup foo( taz_Interface* taz, taz_Tup* args ) {
-    return (taz_Tup){ .size = 0 };
+static taz_Tup* foo( taz_Interface* taz, taz_Tup* args ) {
+    return NULL;
 }
 
 begin_test( create_host_code, SETUP_ENGINE_AND_BARRIER )

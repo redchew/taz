@@ -135,14 +135,13 @@ static void errorFun( tazE_Engine* eng, tazE_Barrier* bar ) {
     calledErrorFun = true;
 }
 static void doError( tazE_Engine* eng ) {
-    tazE_error( eng, taz_ErrNum_OTHER, tazR_nil );
+    tazE_error( eng, taz_ErrNum_OTHER );
 }
 begin_test( error_handling, SETUP_ENGINE )
     tazE_Barrier bar = { .errorFun = errorFun };
     if( setjmp( bar.errorDst ) ) {
         check( calledErrorFun );
         check( bar.errnum == taz_ErrNum_OTHER );
-        check( !memcmp( &bar.errval, &tazR_nil, sizeof(tazR_TVal) ) );
         pass();
     }
     tazE_pushBarrier( eng, &bar );
@@ -150,6 +149,29 @@ begin_test( error_handling, SETUP_ENGINE )
     doError( eng );
     fail();
 end_test( error_handling, TEARDOWN_ENGINE )
+
+
+static bool calledPanicFun = false;
+static void panicFun( tazE_Engine* eng, tazE_Barrier* bar ) {
+    calledPanicFun = true;
+}
+static void doPanic( tazE_Engine* eng ) {
+    tazE_panic( eng, tazR_nil );
+}
+
+begin_test( panic_handling, SETUP_ENGINE )
+    tazE_Barrier bar = { .errorFun = panicFun };
+    if( setjmp( bar.errorDst ) ) {
+        check( calledPanicFun );
+        check( bar.errnum == taz_ErrNum_PANIC );
+        check( tazR_valEqual( bar.errval, tazR_nil ) );
+        pass();
+    }
+    tazE_pushBarrier( eng, &bar );
+    
+    doPanic( eng );
+    fail();
+end_test( panic_handling, TEARDOWN_ENGINE )
 
 static bool calledYieldFun = false;
 static void yieldFun( tazE_Engine* eng, tazE_Barrier* bar ) {
@@ -275,6 +297,7 @@ begin_suite( engine_tests )
     with_test( zalloc_and_cancel_objects )
     with_test( raw_memory_management )
     with_test( error_handling );
+    with_test( panic_handling );
     with_test( yield_handling );
     with_test( long_strings );
     with_test( medium_strings );

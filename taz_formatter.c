@@ -44,26 +44,26 @@ void tazR_vfmt( tazE_Engine* eng, taz_Writer* w, char const* pat, va_list ap ) {
                     break;
                     case 'H':
                         if( hasBase( flags ) )
-                            tazE_error( eng, taz_ErrNum_FORMAT, eng->errvalInvalidFormatSpec );
+                            tazE_error( eng, taz_ErrNum_FORMAT_SPEC );
                         flags |= tazR_FmtFlag_HEX;
                     break;
                     case 'D':
                         if( hasBase( flags ) )
-                            tazE_error( eng, taz_ErrNum_FORMAT, eng->errvalInvalidFormatSpec );
+                            tazE_error( eng, taz_ErrNum_FORMAT_SPEC );
                         flags |= tazR_FmtFlag_DEC;
                     break;
                     case 'O':
                         if( hasBase( flags ) )
-                            tazE_error( eng, taz_ErrNum_FORMAT, eng->errvalInvalidFormatSpec );
+                            tazE_error( eng, taz_ErrNum_FORMAT_SPEC );
                         flags |= tazR_FmtFlag_OCT;
                     break;
                     case 'B':
                         if( hasBase( flags ) )
-                            tazE_error( eng, taz_ErrNum_FORMAT, eng->errvalInvalidFormatSpec );
+                            tazE_error( eng, taz_ErrNum_FORMAT_SPEC );
                         flags |= tazR_FmtFlag_BIN;
                     break;
                     default:
-                        tazE_error( eng, taz_ErrNum_FORMAT, eng->errvalInvalidFormatSpec );
+                        tazE_error( eng, taz_ErrNum_FORMAT_SPEC );
                     break;
                 }
             }
@@ -309,6 +309,8 @@ static void fmtRec( tazE_Engine* eng, taz_Writer* w, tazR_Rec* rec, tazR_FmtFlag
     if( !empty )
         w->write( w, ' ' );
     w->write( w, '}' );
+
+    tazE_remBucket( eng, &buc );
 }
 
 static void fmtFun( tazE_Engine* eng, taz_Writer* w, tazR_Fun* fun, tazR_FmtFlags flags ) {

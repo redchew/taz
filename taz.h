@@ -10,6 +10,7 @@ typedef struct taz_StrLoan   taz_StrLoan;
 typedef struct taz_Trace     taz_Trace;
 typedef struct taz_LocInfo   taz_LocInfo;
 typedef struct taz_FunInfo   taz_FunInfo;
+typedef enum   taz_FibState  taz_FibState;
 typedef enum   taz_ErrNum    taz_ErrNum;
 typedef enum   taz_Scope     taz_Scope;
 
@@ -22,8 +23,8 @@ typedef struct taz_Tup3 taz_Tup3;
 typedef struct taz_Reader taz_Reader;
 typedef struct taz_Writer taz_Writer;
 
-typedef void*   (*taz_MemCb)( void* old, size_t osz, size_t nsz );
-typedef taz_Tup (*taz_FunCb)( taz_Interface* taz, taz_Tup* args );
+typedef void*    (*taz_MemCb)( void* old, size_t osz, size_t nsz );
+typedef taz_Tup* (*taz_FunCb)( taz_Interface* taz, taz_Tup* args );
 
 struct taz_Config {
     taz_MemCb alloc;
@@ -36,24 +37,21 @@ struct taz_Var {
 
 struct taz_Tup {
     unsigned size;
+    taz_Var  vars[];
 };
 
 struct taz_Tup1 {
-    taz_Tup  base;
-    taz_Var  _0;
+    unsigned size;
+    taz_Var  vars[1];
 };
 
 struct taz_Tup2 {
-    taz_Tup  base;
-    taz_Var  _0;
-    taz_Var  _1;
+    unsigned size;
+    taz_Var  vars[2];
 };
-
 struct taz_Tup3 {
-    taz_Tup  base;
-    taz_Var  _0;
-    taz_Var  _1;
-    taz_Var  _2;
+    unsigned size;
+    taz_Var  vars[3];
 };
 
 struct taz_StrLoan {
@@ -79,11 +77,31 @@ struct taz_Trace {
 
 enum taz_ErrNum {
     taz_ErrNum_NONE,
+        taz_ErrNum_KEY_TYPE,
+        taz_ErrNum_NUM_LOCALS,
+        taz_ErrNum_NUM_UPVALS,
+        taz_ErrNum_NUM_CONSTS,
+        taz_ErrNum_PARAM_NAME,
+        taz_ErrNum_UPVAL_NAME,
+        taz_ErrNum_EXTRA_PARAMS,
+        taz_ErrNum_SET_TO_UDF,
+        taz_ErrNum_SET_UNDEFINED,
+        taz_ErrNum_FORMAT_SPEC,
+        taz_ErrNum_CYCLIC_RECORD,
+        taz_ErrNum_FIB_NOT_STOPPED,
+        taz_ErrNum_PANIC,
+        taz_ErrNum_OTHER,
     taz_ErrNum_FATAL,
-    taz_ErrNum_PANIC,
-    taz_ErrNum_COMPILE,
-    taz_ErrNum_FORMAT,
-    taz_ErrNum_OTHER
+        taz_ErrNum_MEMORY,
+    taz_ErrNum_LAST
+};
+
+enum taz_FibState {
+    taz_FibState_CURRENT,
+    taz_FibState_FAILED,
+    taz_FibState_PAUSED,
+    taz_FibState_STOPPED,
+    taz_FibState_FINISHED
 };
 
 enum taz_Scope {
