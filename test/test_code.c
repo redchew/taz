@@ -35,8 +35,8 @@ static void* alloc( void* old, size_t osz, size_t nsz ) {
     tazE_popBarrier( eng, &bar );                                           \
     tazE_freeEngine( eng );
 
-static void foo( taz_Interface* taz, taz_Call* call ) {
-    // NADA
+static taz_Tup foo( taz_Interface* taz, taz_Tup* args ) {
+    return (taz_Tup){ .size = 0 };
 }
 
 begin_test( create_host_code, SETUP_ENGINE_AND_BARRIER )
@@ -46,10 +46,15 @@ begin_test( create_host_code, SETUP_ENGINE_AND_BARRIER )
     } buc;
     tazE_addBucket( eng, &buc, 1 );
 
-    tazR_Code* code = tazR_makeHostCode( eng, foo, 123, "foo",
-        (char const*[]){ "a", "b", NULL },
-        (char const*[]){ "x", "y", NULL }
-    );
+    taz_FunInfo info = {
+        .name     = "foo",
+        .params   = "a, b",
+        .upvals   = "x, y",
+        .cSize    = 0,
+        .fSize    = 0,
+        .callback = foo
+    };
+    tazR_Code* code = tazR_makeHostCode( eng, &info );
     buc.code = tazR_codeVal( code );
 
     tazE_collect( eng, true );

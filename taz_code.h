@@ -30,7 +30,8 @@ struct tazR_Code {
 struct tazR_HostCode {
     tazR_Code base;
 
-    size_t    stateSize;
+    size_t    cSize;
+    size_t    fSize;
     taz_FunCb callback;
 };
 
@@ -54,7 +55,7 @@ struct tazR_ByteCode {
 
 
 tazC_Assembler* tazR_makeAssembler( tazE_Engine* eng, tazR_Str name, taz_Scope scope );
-tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char const* name, char const** params, char const** upvals );
+tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunInfo* info );
 
 void tazR_dumpCode( tazE_Engine* eng, tazR_Code* code, taz_Writer* w );
 

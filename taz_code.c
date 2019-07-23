@@ -352,41 +352,82 @@ tazC_Assembler* tazR_makeAssembler( tazE_Engine* eng, tazR_Str name, taz_Scope s
     return (tazC_Assembler*)as;
 }
 
-static bool checkParamName( char const* name, bool* isVar ) {
-    if( !isalpha( name[0] ) && name[0] != '_' )
-        return false;
-    
-    unsigned i;
-    for( i = 1 ; name[i] != '\0' && name[i] != '.' ; i++ ) {
-        if( !isalnum( name[i] ) && name[i] != '_' )
-            return false;
-    }
+static void parseParams( tazE_Engine* eng, char const* params, tazR_HostCode* code ) {
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   name;
+    } buc;
+    tazE_addBucket( eng, &buc, 1 );
 
-    if( name[i] == '\0' ) {
-        *isVar = false;
-        return true;
+    code->base.hasVarParams   = false;
+    code->base.numFixedParams = 0;
+
+    size_t i = 0;
+    while( isspace( params[i] ) || params[i] == ',' )
+        i++;
+    while( params[i] != '\0' ) {
+        
+        size_t j = i;
+        if( !isalpha( params[j] ) && params[j] != '_' )
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
+        if( code->base.hasVarParams )
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalExtraParamsAfterEllipsis );
+        
+        while( isalnum( params[j] ) || params[j] == '_' )
+            j++;
+        tazR_Str name = tazE_makeStr( eng, &params[i], j - i );
+        buc.name = tazR_strVal( name );
+        tazR_idxInsert( eng, code->base.localIdx, buc.name );
+        if( params[j] == '.' && params[j+1] == '.' && params[j+2] == '.' ) {
+            code->base.hasVarParams = true;
+            i = j + 3;
+        }
+        else {
+            code->base.numFixedParams++;
+            i = j;
+        }
+        
+        while( isspace( params[i] ) || params[i] == ',' )
+            i++;
     }
-    if( name[i] == '.' && name[i+1] == '.' && name[i+2] == '.' && name[i+3] == '\0' ) {
-        *isVar = true;
-        return true;
-    }
-    return false;
+    tazE_remBucket( eng, &buc );
 }
 
-static bool checkUpvalName( char const* name ) {
-    if( !isalpha( name[0] ) && name[0] != '_' )
-        return false;
-    
-    unsigned i;
-    for( i = 1 ; name[i] != '\0' ; i++ ) {
-        if( !isalnum( name[i] ) && name[i] != '_' )
-            return false;
-    }
+static void parseUpvals( tazE_Engine* eng, char const* upvals, tazR_HostCode* code ) {
+    struct {
+        tazE_Bucket base;
+        tazR_TVal   name;
+    } buc;
+    tazE_addBucket( eng, &buc, 1 );
 
-    return true;
+    code->base.numUpvals = 0;
+
+    size_t i = 0;
+    while( isspace( upvals[i] ) || upvals[i] == ',' )
+        i++;
+    while( upvals[i] != '\0' ) {
+        
+        size_t j = i;
+        if( !isalpha( upvals[j] ) && upvals[j] != '_' )
+            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
+        
+        while( isalnum( upvals[j] ) || upvals[j] == '_' )
+            j++;
+        
+        tazR_Str name = tazE_makeStr( eng, &upvals[i], j - i );
+        buc.name = tazR_strVal( name );
+        tazR_idxInsert( eng, code->base.upvalIdx, buc.name );
+        code->base.numUpvals++;
+
+        i = j;
+        
+        while( isspace( upvals[i] ) || upvals[i] == ',' )
+            i++;
+    }
+    tazE_remBucket( eng, &buc );
 }
 
-tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char const* name, char const** params, char const** upvals ) {
+tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunInfo* info ) {
     struct {
         tazE_Bucket base;
         tazR_TVal   nameStr;
@@ -395,7 +436,7 @@ tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char co
     } buc;
     tazE_addBucket( eng, &buc, 3 );
     
-    tazR_Str nameStr  = tazE_makeStr( eng, name, strlen( name ) );
+    tazR_Str nameStr  = tazE_makeStr( eng, info->name, strlen( info->name ) );
     buc.nameStr = tazR_strVal( nameStr );
 
     tazR_Idx* upvalIdx = tazR_makeIdx( eng );
@@ -414,32 +455,12 @@ tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunCb cb, size_t sz, char co
     code->base.numUpvals        = 0;
     code->base.localIdx         = localIdx;
     code->base.numLocals        = 0;
-    code->callback              = cb;
-    code->stateSize             = sz;
+    code->cSize                 = info->cSize;
+    code->fSize                 = info->fSize;
+    code->callback              = info->callback;
 
-    for( unsigned i = 0 ; params[i] != NULL ; i++ ) {
-        bool isVar = false;
-        if( !checkParamName( params[i], &isVar ) )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadParamName );
-        if( code->base.hasVarParams && isVar )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalMultipleEllipsis );
-        
-        if( isVar ) {
-            code->base.hasVarParams = true;
-            tazR_idxInsert( eng, localIdx, tazR_strVal( tazE_makeStr( eng, params[i], strlen( params[i] ) - 3 ) ) );
-        }
-        else {
-            code->base.numFixedParams++;
-            tazR_idxInsert( eng, localIdx, tazR_strVal( tazE_makeStr( eng, params[i], strlen( params[i] ) ) ) );
-        }
-    }
-
-    for( unsigned i = 0 ; upvals[i] != NULL ; i++ ) {
-        if( !checkUpvalName( upvals[i] ) )
-            tazE_error( eng, taz_ErrNum_OTHER, eng->errvalBadUpvalName );
-        code->base.numUpvals++;
-        tazR_idxInsert( eng, upvalIdx, tazR_strVal( tazE_makeStr( eng, params[i], strlen( params[i] ) ) ) );
-    }
+    parseParams( eng, info->params, code );
+    parseUpvals( eng, info->upvals, code );
 
     tazE_commitObj( eng, &codeA );
     tazE_remBucket( eng, &buc );

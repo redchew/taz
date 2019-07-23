@@ -28,6 +28,8 @@ struct tazE_Engine {
     tazR_State* envState;
     tazR_State* apiState;
 
+    tazR_Fib* fiber;
+
     tazR_TVal errvalBadAlloc;
     tazR_TVal errvalBadKey;
     tazR_TVal errvalTooManyLocals;
@@ -35,7 +37,7 @@ struct tazE_Engine {
     tazR_TVal errvalTooManyConsts;
     tazR_TVal errvalBadParamName;
     tazR_TVal errvalBadUpvalName;
-    tazR_TVal errvalMultipleEllipsis;
+    tazR_TVal errvalExtraParamsAfterEllipsis;
     tazR_TVal errvalSetFromUdf;
     tazR_TVal errvalSetToUdf;
     tazR_TVal errvalInvalidFormatSpec;

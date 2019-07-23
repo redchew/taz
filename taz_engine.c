@@ -4,6 +4,8 @@
     #include "taz_index.h"
     #include "taz_code.h"
     #include "taz_record.h"
+    #include "taz_upvalue.h"
+    #include "taz_function.h"
 #endif
 
 #include <string.h>
@@ -283,7 +285,7 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
     tazE_markVal( &eng->view, eng->view.errvalTooManyConsts );
     tazE_markVal( &eng->view, eng->view.errvalBadParamName );
     tazE_markVal( &eng->view, eng->view.errvalBadUpvalName );
-    tazE_markVal( &eng->view, eng->view.errvalMultipleEllipsis );
+    tazE_markVal( &eng->view, eng->view.errvalExtraParamsAfterEllipsis );
     tazE_markVal( &eng->view, eng->view.errvalSetFromUdf );
     tazE_markVal( &eng->view, eng->view.errvalSetToUdf );
     tazE_markVal( &eng->view, eng->view.errvalInvalidFormatSpec );
@@ -293,6 +295,8 @@ static void collect( EngineFull* eng, size_t nsz, bool full ) {
         tazE_markObj( (tazE_Engine*)eng, eng->view.envState );
     if( eng->view.apiState )
         tazE_markObj( (tazE_Engine*)eng, eng->view.apiState );
+    if( eng->view.fiber )
+        tazE_markObj( (tazE_Engine*)eng, eng->view.fiber );
     
     tazE_Barrier* barIt = eng->barriers;
     while( barIt ) {
@@ -718,6 +722,7 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     
     eng->view.envState = NULL;
     eng->view.apiState = NULL;
+    eng->view.fiber    = NULL;
     eng->alloc         = alloc;
     eng->barriers      = NULL;
     eng->objects       = NULL;
@@ -755,7 +760,7 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     ERRVAL( TooManyConsts, "Constant value limit exceeded in function" );
     ERRVAL( BadParamName, "Invalid parameter name" );
     ERRVAL( BadUpvalName, "Invalid upvalue name" );
-    ERRVAL( MultipleEllipsis, "Multiple ellipsis given in parameter or variable list" );
+    ERRVAL( ExtraParamsAfterEllipsis, "Extra parameters given after ellipsis" );
     ERRVAL( SetFromUdf, "Attempt to set record field or variable from `udf` value" );
     ERRVAL( SetToUdf, "Attempt to set undefined variable or record field" );
     ERRVAL( InvalidFormatSpec, "Invalid format specifier" );
