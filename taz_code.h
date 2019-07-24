@@ -17,8 +17,8 @@ struct tazR_Code {
     taz_Scope     scope;
     tazR_Str      name;
 
-    unsigned numFixedParams;
-    bool     hasVarParams;
+    unsigned  numFixedParams;
+    tazR_Idx* varParamsIdx;
 
     tazR_Idx* upvalIdx;
     unsigned  numUpvals;

@@ -298,4 +298,12 @@ enum tazR_OpCode {
 #undef OP
 
 
+#define tazR_varGet( VAR ) \
+    (NULL, *(tazR_TVal**)(VAR)._base + (VAR)._offset)
+#define tazR_varSet( VAR, VAL ) do {                                \
+    tazR_TVal val = (VAL);                                          \
+    tazR_TVal* ptr = *(tazR_TVal**)(VAR)._base + (VAR)._offset;     \
+    *ptr = val;                                                     \
+} while( 0 )
+
 #endif

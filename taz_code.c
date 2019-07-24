@@ -55,8 +55,8 @@ struct BCAssembler {
     tazR_Str       name;
     taz_Scope      scope;
 
-    unsigned numFixedParams;
-    bool     hasVarParams;
+    unsigned  numFixedParams;
+    tazR_Idx* varParamsIdx;
 
     InstrBuf instrs;
     LabelBuf labels;
@@ -85,7 +85,9 @@ static void scanAssembler( tazE_Engine* eng, tazR_State* self, bool full ) {
     tazE_markStr( eng, as->name );
     tazE_markObj( eng, as->upvalIdx );
     tazE_markObj( eng, as->localIdx );
-
+    if( as->varParamsIdx )
+        tazE_markObj( eng, as->varParamsIdx );
+    
     ConstBuf_scan( eng, &as->consts, full );
 }
 
@@ -176,7 +178,7 @@ static tazR_Ref addLocal( tazC_Assembler* _as, tazR_Str name ) {
 
 static tazR_Ref addParam( tazC_Assembler* _as, tazR_Str name, bool var ) {
     BCAssembler* as = (BCAssembler*)_as;
-    assert( as->numLocals == 0 && !as->hasVarParams );
+    assert( as->numLocals == 0 && !as->varParamsIdx );
 
     tazR_Ref ref;
     if( as->scope == taz_Scope_GLOBAL ) {
@@ -190,7 +192,7 @@ static tazR_Ref addParam( tazC_Assembler* _as, tazR_Str name, bool var ) {
             tazE_error( as->eng, taz_ErrNum_NUM_LOCALS );
         
         if( var )
-            as->hasVarParams = true;
+            as->varParamsIdx = tazR_makeIdx( as->eng );
         else
             as->numFixedParams++;
     }
@@ -273,7 +275,7 @@ static tazR_Code* makeByteCode( tazC_Assembler* _as ) {
     code->base.scope          = as->scope;
     code->base.name           = as->name;
     code->base.numFixedParams = as->numFixedParams;
-    code->base.hasVarParams   = as->hasVarParams;
+    code->base.varParamsIdx   = as->varParamsIdx;
     code->base.upvalIdx       = as->upvalIdx;
     code->base.numUpvals      = as->numUpvals;
     code->base.localIdx       = as->localIdx;
@@ -333,7 +335,7 @@ tazC_Assembler* tazR_makeAssembler( tazE_Engine* eng, tazR_Str name, taz_Scope s
     as->scope = scope;
     
     as->numFixedParams = 0;
-    as->hasVarParams   = false;
+    as->varParamsIdx   = NULL;
 
     as->topLabels = NULL;
 
@@ -359,7 +361,7 @@ static void parseParams( tazE_Engine* eng, char const* params, tazR_HostCode* co
     } buc;
     tazE_addBucket( eng, &buc, 1 );
 
-    code->base.hasVarParams   = false;
+    code->base.varParamsIdx   = NULL;
     code->base.numFixedParams = 0;
 
     size_t i = 0;
@@ -370,7 +372,7 @@ static void parseParams( tazE_Engine* eng, char const* params, tazR_HostCode* co
         size_t j = i;
         if( !isalpha( params[j] ) && params[j] != '_' )
             tazE_error( eng, taz_ErrNum_PARAM_NAME );
-        if( code->base.hasVarParams )
+        if( code->base.varParamsIdx )
             tazE_error( eng, taz_ErrNum_EXTRA_PARAMS );
         
         while( isalnum( params[j] ) || params[j] == '_' )
@@ -379,7 +381,7 @@ static void parseParams( tazE_Engine* eng, char const* params, tazR_HostCode* co
         buc.name = tazR_strVal( name );
         tazR_idxInsert( eng, code->base.localIdx, buc.name );
         if( params[j] == '.' && params[j+1] == '.' && params[j+2] == '.' ) {
-            code->base.hasVarParams = true;
+            code->base.varParamsIdx = tazR_makeIdx( eng );
             i = j + 3;
         }
         else {
@@ -450,7 +452,7 @@ tazR_Code* tazR_makeHostCode( tazE_Engine* eng, taz_FunInfo* info ) {
     code->base.type             = tazR_CodeType_HOST;
     code->base.name             = nameStr;
     code->base.numFixedParams   = 0;
-    code->base.hasVarParams     = false;
+    code->base.varParamsIdx     = NULL;
     code->base.upvalIdx         = upvalIdx;
     code->base.numUpvals        = 0;
     code->base.localIdx         = localIdx;
@@ -478,6 +480,9 @@ void _tazR_scanCode( tazE_Engine* eng, tazR_Code* code, bool full ) {
     
     tazE_markObj( eng, code->localIdx );
     tazE_markObj( eng, code->upvalIdx );
+    
+    if( code->varParamsIdx )
+        tazE_markObj( eng, code->varParamsIdx );
 
     if( code->type == tazR_CodeType_BYTE ) {
         tazR_ByteCode* bcode = (tazR_ByteCode*)code;

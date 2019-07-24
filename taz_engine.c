@@ -759,6 +759,8 @@ tazE_Engine* tazE_makeEngine( taz_Config const* cfg ) {
     ERRVAL( taz_ErrNum_SET_UNDEFINED, "Attempt to set undefined variable or record field" );
     ERRVAL( taz_ErrNum_FORMAT_SPEC, "Invalid format specifier" );
     ERRVAL( taz_ErrNum_CYCLIC_RECORD, "Illegal cyclic record operation" );
+    ERRVAL( taz_ErrNum_TOO_MANY_RETURNS, "Too many return values" );
+    ERRVAL( taz_ErrNum_TOO_FEW_RETURNS, "Too few return values" );
 
     tazE_popBarrier( (tazE_Engine*)eng, &bar );
     eng->gcDisabled = false;

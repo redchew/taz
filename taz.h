@@ -19,6 +19,9 @@ typedef struct taz_Tup  taz_Tup;
 typedef struct taz_Tup1 taz_Tup1;
 typedef struct taz_Tup2 taz_Tup2;
 typedef struct taz_Tup3 taz_Tup3;
+typedef struct taz_Tup3 taz_Tup4;
+typedef struct taz_Tup3 taz_Tup5;
+typedef struct taz_Tup3 taz_Tup6;
 
 typedef struct taz_Reader taz_Reader;
 typedef struct taz_Writer taz_Writer;
@@ -36,22 +39,45 @@ struct taz_Var {
 };
 
 struct taz_Tup {
-    unsigned size;
+    unsigned cap;
+    unsigned has;
     taz_Var  vars[];
 };
 
 struct taz_Tup1 {
-    unsigned size;
+    unsigned cap;
+    unsigned has;
     taz_Var  vars[1];
 };
 
 struct taz_Tup2 {
-    unsigned size;
+    unsigned cap;
+    unsigned has;
     taz_Var  vars[2];
 };
+
 struct taz_Tup3 {
-    unsigned size;
+    unsigned cap;
+    unsigned has;
     taz_Var  vars[3];
+};
+
+struct taz_Tup4 {
+    unsigned cap;
+    unsigned has;
+    taz_Var  vars[4];
+};
+
+struct taz_Tup5 {
+    unsigned cap;
+    unsigned has;
+    taz_Var  vars[5];
+};
+
+struct taz_Tup6 {
+    unsigned cap;
+    unsigned has;
+    taz_Var  vars[6];
 };
 
 struct taz_StrLoan {
@@ -89,6 +115,8 @@ enum taz_ErrNum {
         taz_ErrNum_FORMAT_SPEC,
         taz_ErrNum_CYCLIC_RECORD,
         taz_ErrNum_FIB_NOT_STOPPED,
+        taz_ErrNum_TOO_MANY_RETURNS,
+        taz_ErrNum_TOO_FEW_RETURNS,
         taz_ErrNum_PANIC,
         taz_ErrNum_OTHER,
     taz_ErrNum_FATAL,
